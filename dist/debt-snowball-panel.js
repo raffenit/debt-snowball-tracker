@@ -2412,6 +2412,8 @@ class DebtSnowballPanel extends HTMLElement {
   _initApp() {
     // _root is used throughout the app to scope DOM queries to this panel
     const _root = this;
+    _root.getElementById = (id) => _root.querySelector(`#${id}`);
+
     // ─── Data Models ────────────────────────────────────────────────────────────
 let debts = [];
 let recurringCosts = [];
