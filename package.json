@@ -1,0 +1,12 @@
+{
+  "name": "debt-snowball-tracker",
+  "version": "1.0.0",
+  "description": "Debt payoff tracker with snowball/avalanche simulation",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/app.test.js tests/app.extended.test.js",
+    "test:unit": "node --test tests/app.test.js",
+    "test:extended": "node --test tests/app.extended.test.js"
+  },
+  "devDependencies": {}
+}
