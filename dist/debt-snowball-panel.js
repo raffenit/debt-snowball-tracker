@@ -177,6 +177,7 @@ input[type="number"], input[type="text"], input[type="date"], select {
     font-family: inherit;
     font-size: 1rem;
     transition: var(--transition);
+    touch-action: manipulation;
 }
 
 input[type="number"]:focus, input[type="text"]:focus, input[type="date"]:focus, select:focus {
@@ -408,6 +409,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         grid-template-columns: repeat(2, 1fr);
     }
 
+    .stat-value {
+        font-size: 1.35rem;
+    }
+
     .debts-list {
         grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     }
@@ -432,22 +437,41 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     .schedule-amount-col {
         min-width: 80px;
     }
+
+    /* Larger touch targets on tablet */
+    debt-snowball-panel .btn {
+        padding: 0.75rem 1.375rem;
+        min-height: 44px;
+    }
+
+    debt-snowball-panel .tab-btn {
+        padding: 0.75rem 1.25rem;
+        min-height: 44px;
+    }
+
+    debt-snowball-panel input[type="number"],
+    debt-snowball-panel input[type="text"],
+    debt-snowball-panel input[type="date"],
+    debt-snowball-panel select {
+        padding: 0.875rem 1rem;
+        min-height: 48px;
+    }
 }
 
 /* ===== Mobile (≤ 640px) ===== */
 @media (max-width: 640px) {
     .app-container {
-        padding: 1rem 0.75rem;
+        padding: 1rem 0.875rem;
     }
 
     .header {
         flex-direction: column;
         align-items: flex-start;
-        gap: 0.75rem;
+        gap: 0.875rem;
     }
 
     .header h1 {
-        font-size: 1.5rem;
+        font-size: 1.625rem;
     }
 
     .header-actions {
@@ -458,8 +482,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     .header-actions .btn {
         flex: 1;
         min-width: 0;
-        font-size: 0.8rem;
-        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+        padding: 0.75rem 0.875rem;
+        min-height: 44px;
     }
 
     .debts-list {
@@ -468,15 +493,45 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
     .summary-stats {
         grid-template-columns: repeat(2, 1fr);
-        gap: 0.75rem;
+        gap: 0.875rem;
+    }
+
+    .stat-label {
+        font-size: 0.8rem;
     }
 
     .stat-value {
-        font-size: 1.2rem;
+        font-size: 1.35rem;
     }
 
     .card {
-        padding: 1rem 1rem;
+        padding: 1.125rem 1rem;
+    }
+
+    h2 {
+        font-size: 1.125rem;
+    }
+
+    .subtitle {
+        font-size: 0.9rem;
+    }
+
+    .input-group label {
+        font-size: 0.9rem;
+    }
+
+    debt-snowball-panel input[type="number"],
+    debt-snowball-panel input[type="text"],
+    debt-snowball-panel input[type="date"],
+    debt-snowball-panel select {
+        padding: 0.875rem 1rem;
+        font-size: 1rem;
+        min-height: 48px;
+    }
+
+    .btn {
+        min-height: 44px;
+        font-size: 0.9rem;
     }
 
     .modal {
@@ -484,13 +539,17 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     }
 
     .modal-content {
-        padding: 1.25rem;
+        padding: 1.5rem 1.25rem;
         margin: 0;
         border-radius: var(--radius) var(--radius) 0 0;
         max-width: 100% !important;
         width: 100%;
-        max-height: 90vh;
+        max-height: 92vh;
         overflow-y: auto;
+    }
+
+    .modal-header h2 {
+        font-size: 1.1rem;
     }
 
     #debt-form {
@@ -502,14 +561,15 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     }
 
     .tab-nav {
-        padding: 0.25rem;
-        gap: 0.15rem;
+        padding: 0.3rem;
+        gap: 0.2rem;
         margin-bottom: 1.25rem;
     }
 
     .tab-btn {
-        padding: 0.5rem 0.75rem;
-        font-size: 0.8rem;
+        padding: 0.625rem 0.875rem;
+        font-size: 0.85rem;
+        min-height: 40px;
     }
 
     .schedule-header {
@@ -518,8 +578,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
     .schedule-row {
         flex-wrap: wrap;
-        gap: 0.4rem;
-        padding: 0.75rem 0.75rem;
+        gap: 0.5rem;
+        padding: 0.875rem 0.875rem;
     }
 
     .schedule-date-col {
@@ -527,48 +587,79 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         min-width: 0;
     }
 
+    .schedule-day {
+        font-size: 0.9rem;
+    }
+
     .schedule-info-col {
         flex: 1;
         min-width: 0;
     }
 
+    .schedule-name {
+        font-size: 0.95rem;
+    }
+
+    .schedule-detail {
+        font-size: 0.8rem;
+    }
+
     .schedule-amount-col {
         min-width: 0;
-        font-size: 0.9rem !important;
+        font-size: 1rem !important;
     }
 
     .schedule-balance-col {
-        font-size: 0.85rem !important;
+        font-size: 0.9rem !important;
         min-width: 0;
-        padding: 0.2rem 0.5rem;
+        padding: 0.25rem 0.5rem;
     }
 
     .schedule-action-col {
         min-width: 0;
     }
 
+    .btn-mark-paid {
+        font-size: 0.8rem;
+        padding: 0.45rem 0.875rem;
+        min-height: 36px;
+    }
+
     .windfall-bar {
         flex-direction: column;
         align-items: flex-start;
-        gap: 0.75rem;
+        gap: 0.875rem;
     }
 
     .btn-windfall {
         width: 100%;
         justify-content: center;
+        min-height: 44px;
     }
 
     .income-summary,
     .debt-payments-summary,
     .recurring-cost-summary {
         flex-direction: column;
-        gap: 0.25rem;
+        gap: 0.375rem;
+    }
+
+    .income-summary-label,
+    .debt-payments-label,
+    .recurring-cost-label {
+        font-size: 0.875rem;
+    }
+
+    .income-summary-value,
+    .debt-payments-value,
+    .recurring-cost-value {
+        font-size: 1.2rem;
     }
 
     .section-header {
         flex-direction: column;
         align-items: flex-start;
-        gap: 0.5rem;
+        gap: 0.625rem;
     }
 
     .section-header .btn {
@@ -580,12 +671,26 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         gap: 0.5rem;
     }
 
+    .debt-actions button {
+        min-height: 40px;
+        font-size: 0.85rem;
+    }
+
+    .debt-name {
+        font-size: 1.1rem;
+    }
+
+    .debt-detail {
+        font-size: 0.9rem;
+    }
+
     .modal-actions {
         flex-direction: column-reverse;
     }
 
     .modal-actions .btn {
         width: 100%;
+        min-height: 48px;
     }
 
     .viz-header {
@@ -600,43 +705,68 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     .strategy-btn {
         flex: 1;
         text-align: center;
+        min-height: 40px;
+    }
+
+    .timeline-item {
+        padding: 1rem;
+    }
+
+    .timeline-name {
+        font-size: 0.95rem;
+    }
+
+    .timeline-date {
+        font-size: 0.875rem;
+    }
+
+    .toggle-label {
+        font-size: 0.95rem;
     }
 }
 
 /* ===== Small phone (≤ 480px) ===== */
 @media (max-width: 480px) {
     .app-container {
-        padding: 0.75rem 0.5rem;
+        padding: 0.875rem 0.75rem;
     }
 
     .header h1 {
-        font-size: 1.25rem;
+        font-size: 1.5rem;
     }
 
     .summary-stats {
         grid-template-columns: 1fr 1fr;
-        gap: 0.5rem;
+        gap: 0.625rem;
     }
 
     .stat-box {
-        padding: 0.875rem 0.75rem;
+        padding: 1rem 0.875rem;
+    }
+
+    .stat-label {
+        font-size: 0.775rem;
     }
 
     .stat-value {
-        font-size: 1.1rem;
+        font-size: 1.25rem;
     }
 
     .stat-countdown-value {
-        font-size: 1.75rem !important;
+        font-size: 1.875rem !important;
     }
 
     .card {
-        padding: 0.875rem 0.75rem;
+        padding: 1rem 0.875rem;
+    }
+
+    h2 {
+        font-size: 1.1rem;
     }
 
     .tab-btn {
-        padding: 0.45rem 0.5rem;
-        font-size: 0.75rem;
+        padding: 0.6rem 0.625rem;
+        font-size: 0.8rem;
     }
 
     .timeline-header {
@@ -645,15 +775,19 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     }
 
     .debt-card {
-        padding: 1.1rem 0.875rem;
+        padding: 1.25rem 1rem;
     }
 
     .debt-name {
-        font-size: 1rem;
+        font-size: 1.05rem;
     }
 
-    h2 {
-        font-size: 1rem;
+    .debt-detail {
+        font-size: 0.875rem;
+    }
+
+    .debt-detail-value {
+        font-size: 0.875rem;
     }
 
     .undo-toast {
@@ -2695,26 +2829,28 @@ const importFileInput       = _root.getElementById('import-file');
 const windfallModal         = _root.getElementById('windfall-modal');
 const checkinModal          = _root.getElementById('checkin-modal');
 
-// ─── HA Backend Data Storage ────────────────────────────────────────────────
+// ─── HA Backend Data Storage ─────────────────────────────────────────────────
+// Data is stored as a shared HA sensor state (sensor.snowball_app_data) so that
+// ALL users on the Home Assistant server see the same data, regardless of which
+// account they're logged in with.  The previous implementation used
+// frontend/get_user_data + frontend/set_user_data which are scoped per-user.
 
-// 1. Fetch data from HA Server
+const SHARED_STATE_ENTITY = 'sensor.snowball_app_data';
+
+// 1. Fetch shared data from HA Server
 async function loadBackendData() {
     try {
-        // Call the native HA WebSocket API for user data
-        const response = await _root._hass.callWS({
-            type: 'frontend/get_user_data',
-            key: 'debt_snowball_data'
-        });
+        // Read the shared sensor state that holds our JSON payload
+        const response = await _root._hass.callApi('GET', `states/${SHARED_STATE_ENTITY}`);
 
-        // Unpack the data if it exists
-        if (response && response.value) {
-            const data = response.value;
-            debts = data.debts || [];
-            recurringCosts = data.recurringCosts || [];
-            incomeEntries = data.incomeEntries || [];
-            strategy = data.strategy || 'snowball';
+        if (response && response.attributes && response.attributes.payload) {
+            const data = response.attributes.payload;
+            debts          = data.debts          || [];
+            recurringCosts = data.recurringCosts  || [];
+            incomeEntries  = data.incomeEntries   || [];
+            strategy       = data.strategy        || 'snowball';
             startingBalance = data.startingBalance || 0;
-            
+
             // Restore active tab
             if (data.activeTab) {
                 const savedBtn = _root.querySelector(`.tab-btn[data-tab="${data.activeTab}"]`);
@@ -2722,8 +2858,8 @@ async function loadBackendData() {
             }
         }
     } catch (err) {
-        // This just means the key doesn't exist yet (first time running), which is perfectly fine.
-        console.log("No existing debt snowball data found on server. Starting fresh.");
+        // 404 just means the sensor doesn't exist yet — first run is fine.
+        console.log("No shared debt snowball data found on server. Starting fresh.");
     }
 
     // Now that data is loaded, render the UI and hook up the tabs
@@ -2731,13 +2867,13 @@ async function loadBackendData() {
     renderUI();
 }
 
-// 2. Push data to HA Server
+// 2. Push shared data to HA Server
 function saveData() {
     if (!_root._hass) return;
 
     // Find whichever tab is currently active so we can save the user's view state
     const activeTabEl = _root.querySelector('.tab-btn.active');
-    const activeTab = activeTabEl ? activeTabEl.dataset.tab : 'debts';
+    const activeTab   = activeTabEl ? activeTabEl.dataset.tab : 'debts';
 
     const dataPayload = {
         debts,
@@ -2748,11 +2884,14 @@ function saveData() {
         activeTab
     };
 
-    // Silently push the entire JSON payload to the Home Assistant database
-    _root._hass.callWS({
-        type: 'frontend/set_user_data',
-        key: 'debt_snowball_data',
-        value: dataPayload
+    // Write to a shared sensor entity — visible and editable by all HA users
+    _root._hass.callApi('POST', `states/${SHARED_STATE_ENTITY}`, {
+        state: 'active',
+        attributes: {
+            friendly_name: 'Debt Snowball App Data',
+            icon: 'mdi:credit-card-minus',
+            payload: dataPayload
+        }
     }).catch(err => {
         console.error("Failed to save Debt Snowball data to HA backend:", err);
     });
