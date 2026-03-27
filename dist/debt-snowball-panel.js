@@ -2368,16 +2368,10 @@ class DebtSnowballPanel extends HTMLElement {
     }
 
     set hass(hass) {
-        const isFirstLoad = !this._hass; // Check if this is the first time HA is sending the object
-        
+        // Just store the HA object and locale settings when HA pushes them
         this._hass = hass;
         this._currency = hass.config?.currency || 'USD';
         this._language = hass.locale?.language || hass.language || navigator.language;
-
-        // Only boot up the app once we have the HA object
-        if (isFirstLoad) {
-            this.loadBackendData();
-        }
     }
   
     connectedCallback() {
@@ -4559,14 +4553,20 @@ function initTabs() {
     }
 }
 
-// Patch init to include tab setup
-const _origInit = init;
-// Override DOMContentLoaded to call initTabs after init
-    // Bootstrap
-    init();
-    initTabs();
-  }
-}
+// ─── Bootstrap App ────────────────────────────────────────────────────────
+    setupEventListeners();
+
+    // Home Assistant pushes the 'hass' object asynchronously. 
+    // We wait a few milliseconds for it to arrive, then pull our data and render!
+    const waitForHass = setInterval(() => {
+        if (_root._hass) {
+            clearInterval(waitForHass);
+            loadBackendData();
+        }
+    }, 50);
+
+  } // <-- Closes _initApp()
+} // <-- Closes the DebtSnowballPanel class
 
 customElements.define('debt-snowball-panel', DebtSnowballPanel);
 
