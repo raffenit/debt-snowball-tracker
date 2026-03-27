@@ -2357,25 +2357,41 @@ const PANEL_HTML = `<div class="app-container">
     <canvas id="confetti-canvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;display:none;"></canvas>`;
 
 class DebtSnowballPanel extends HTMLElement {
-  connectedCallback() {
-    // Load Google Fonts
-    if (!document.querySelector('link[data-debt-snowball-font]')) {
-      const fontLink = document.createElement('link');
-      fontLink.rel = 'stylesheet';
-      fontLink.setAttribute('data-debt-snowball-font', '1');
-      fontLink.href = 'https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap';
-      document.head.appendChild(fontLink);
+    setConfig(config) {
+        // Lovelace requires this method to exist, even if we don't use the config
+        this.config = config;
     }
 
-    // Inject styles scoped into this element
-    // Inject styles into document.head so HA's own stylesheet doesn't override them
-    const styleId = 'debt-snowball-panel-styles';
-    if (!document.getElementById(styleId)) {
-      const styleEl = document.createElement('style');
-      styleEl.id = styleId;
-      styleEl.textContent = PANEL_CSS;
-      document.head.appendChild(styleEl);
+    getCardSize() {
+        // Tells Lovelace this is a large card
+        return 10;
     }
+
+    set hass(hass) {
+        // HA pushes updates here constantly. We store it on the element.
+        this._hass = hass;
+        
+        // Extract the currency symbol/code (e.g., 'USD', 'EUR', 'GBP')
+        this._currency = hass.config?.currency || 'USD';
+        
+        // Extract the language locale for number formatting (e.g., 'en-US', 'de-DE')
+        this._language = hass.locale?.language || hass.language || navigator.language;
+    }
+  
+    connectedCallback() {
+    // Load Google Fonts
+    if (!document.querySelector('link[data-debt-snowball-font]')) {
+        const fontLink = document.createElement('link');
+        fontLink.rel = 'stylesheet';
+        fontLink.setAttribute('data-debt-snowball-font', '1');
+        fontLink.href = 'https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap';
+        document.head.appendChild(fontLink);
+    }
+
+    // Inject styles directly into the component to bypass HA's Shadow DOM blocking
+    const styleEl = document.createElement('style');
+    styleEl.textContent = PANEL_CSS;
+    this.appendChild(styleEl);
 
     // Inject HTML
     const wrapper = document.createElement('div');
@@ -3170,10 +3186,73 @@ function showNotificationToast(message, type = 'info') {
     setTimeout(() => dismissToast(toast), 4000);
 }
 
+// ─── HA Sensor Bridge ────────────────────────────────────────────────────────
+function updateHASensors(simResults, schedule) {
+    if (!_root._hass) return; // Safety check: Ensure HA object exists
+
+    // 1. Push Total Debt Sensor
+    const totalDebt = debts.reduce((s, d) => s + d.balance, 0);
+    _root._hass.callApi('POST', 'states/sensor.snowball_total_debt', {
+        state: totalDebt.toFixed(2),
+        attributes: {
+            friendly_name: 'Total Remaining Debt',
+            unit_of_measurement: _root._currency || 'USD',
+            icon: 'mdi:cash-multiple'
+        }
+    });
+
+    // 2. Push Payoff Date Sensor
+    if (simResults && simResults.valid && simResults.monthsElapsed < 1200) {
+        const today = new Date();
+        const payoffDate = new Date(today.getFullYear(), today.getMonth() + simResults.monthsElapsed, 1);
+        _root._hass.callApi('POST', 'states/sensor.snowball_payoff_date', {
+            state: payoffDate.toISOString().split('T')[0],
+            attributes: {
+                friendly_name: 'Debt Free Date',
+                device_class: 'date',
+                icon: 'mdi:calendar-star'
+            }
+        });
+    }
+
+    // 3. Push Next Upcoming Payment Sensor
+    if (schedule && schedule.length > 0) {
+        const currentDay = new Date().getDate();
+        // Find the next unpaid debt in the schedule that is due today or later
+        const nextPayment = schedule.find(item => 
+            item.type === 'debt' && 
+            !paidStatus[item.id] && 
+            item.day >= currentDay
+        );
+
+        if (nextPayment) {
+            _root._hass.callApi('POST', 'states/sensor.snowball_next_payment', {
+                state: nextPayment.amount.toFixed(2),
+                attributes: {
+                    friendly_name: 'Next Debt Payment',
+                    unit_of_measurement: _root._currency || 'USD',
+                    debt_name: nextPayment.name,
+                    due_day: nextPayment.day,
+                    icon: 'mdi:calendar-clock'
+                }
+            });
+        } else {
+            // All caught up for the month!
+            _root._hass.callApi('POST', 'states/sensor.snowball_next_payment', {
+                state: '0.00',
+                attributes: {
+                    friendly_name: 'Next Debt Payment',
+                    debt_name: 'All Caught Up!',
+                    icon: 'mdi:check-circle'
+                }
+            });
+        }
+    }
+}
+
 // ─── Rendering ───────────────────────────────────────────────────────────────
 function renderUI() {
     const startingBalanceInput = _root.getElementById('starting-bank-balance');
-    // Prevent auto-formatting from stealing the cursor while actively typing
     if (startingBalanceInput && document.activeElement !== startingBalanceInput) {
         startingBalanceInput.value = startingBalance.toFixed(2);
     }
@@ -3183,10 +3262,17 @@ function renderUI() {
     });
     renderIncomeList();
     renderRecurringCostsList();
+    
     const simResults = runSimulation(strategy);
     renderDebtsList(simResults);
     renderVisualization(simResults);
-    renderPaymentPlan();
+    
+    // NOTE: renderPaymentPlan actually returns nothing right now. 
+    // To grab the schedule, we need to let it return the array it builds.
+    const schedule = renderPaymentPlan(); 
+    
+    // Fire our new HA Sensor function!
+    updateHASensors(simResults, schedule); 
 }
 
 function formatOrdinal(day) {
@@ -3195,7 +3281,26 @@ function formatOrdinal(day) {
 }
 
 function formatMoney(n) {
-    return '$' + n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    // Pull the currency and language we caught in Step 1. 
+    // (_root is your panel instance where we saved them)
+    const currency = _root._currency || 'USD';
+    const language = _root._language || undefined; // undefined falls back to browser default
+
+    try {
+        return new Intl.NumberFormat(language, {
+            style: 'currency',
+            currency: currency,
+            // These ensure you always get $0.00 instead of $0
+            minimumFractionDigits: 2, 
+            maximumFractionDigits: 2
+        }).format(n);
+    } catch (e) {
+        // Safe fallback just in case the browser doesn't recognize the currency code
+        return Number(n).toLocaleString(language, { 
+            style: 'currency', 
+            currency: 'USD' 
+        });
+    }
 }
 
 function escHtml(str) {
@@ -4122,6 +4227,7 @@ function renderPaymentPlan() {
         nextMonthEl.textContent = formatMoney(cashPool);
         nextMonthEl.style.color = cashPool < 0 ? 'var(--danger-color)' : 'var(--text-primary)'; 
     }
+    return schedule;
 }
 
 // ─── Countdown Timer ─────────────────────────────────────────────────────────
@@ -4424,3 +4530,12 @@ const _origInit = init;
 }
 
 customElements.define('debt-snowball-panel', DebtSnowballPanel);
+
+// This registers your app in the Home Assistant UI card picker!
+window.customCards = window.customCards || [];
+window.customCards.push({
+  type: "debt-snowball-panel",
+  name: "Debt Snowball Tracker",
+  description: "A full-screen interactive debt snowball and avalanche tracker.",
+  preview: true,
+});

@@ -1,20 +1,26 @@
 :root {
-    --bg-color: #07061a;           /* Deep midnight */
-    --card-bg: #0f0d2a;            /* Dark indigo */
-    --card-bg-2: #13113a;          /* Slightly lighter indigo */
-    --text-primary: #ede9ff;       /* Lavender white */
-    --text-secondary: #7b74a8;     /* Muted violet */
-    --accent-color: #5b7fff;       /* Blue-violet */
-    --accent-hover: #4466ee;       /* Deeper blue-violet */
-    --accent-glow: rgba(91, 127, 255, 0.35);
-    --danger-color: #f4587a;       /* Hot rose */
-    --success-color: #34c97a;      /* Vivid mint */
+    /* Mapped to HA Native Variables (with your original colors as fallbacks) */
+    --bg-color: var(--primary-background-color, #07061a);
+    --card-bg: var(--card-background-color, #0f0d2a);
+    --card-bg-2: var(--secondary-background-color, #13113a);
+    
+    --text-primary: var(--primary-text-color, #ede9ff);
+    --text-secondary: var(--secondary-text-color, #7b74a8);
+    
+    --accent-color: var(--primary-color, #5b7fff);
+    --accent-hover: var(--light-primary-color, #4466ee);
+    --accent-glow: rgba(91, 127, 255, 0.35); /* Kept custom for the glow effect */
+    
+    --danger-color: var(--error-color, #f4587a);
+    --success-color: var(--success-color, #34c97a);
     --success-hover: #22ae63;
-    --warning-color: #f0a050;      /* Warm amber */
+    --warning-color: var(--warning-color, #f0a050);
     --warning-hover: #d4893a;
-    --border-color: #1e2255;       /* Blue-indigo border */
-    --border-bright: #2e3888;      /* Brighter blue-indigo border */
-    --radius: 12px;
+    
+    --border-color: var(--divider-color, #1e2255);
+    --border-bright: var(--divider-color, #2e3888); 
+    
+    --radius: var(--ha-card-border-radius, 12px);
     --transition: all 0.2s ease;
 }
 
