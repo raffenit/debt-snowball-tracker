@@ -2368,41 +2368,43 @@ class DebtSnowballPanel extends HTMLElement {
     }
 
     set hass(hass) {
-        // HA pushes updates here constantly. We store it on the element.
+        const isFirstLoad = !this._hass; // Check if this is the first time HA is sending the object
+        
         this._hass = hass;
-        
-        // Extract the currency symbol/code (e.g., 'USD', 'EUR', 'GBP')
         this._currency = hass.config?.currency || 'USD';
-        
-        // Extract the language locale for number formatting (e.g., 'en-US', 'de-DE')
         this._language = hass.locale?.language || hass.language || navigator.language;
+
+        // Only boot up the app once we have the HA object
+        if (isFirstLoad) {
+            this.loadBackendData();
+        }
     }
   
     connectedCallback() {
-    // Load Google Fonts
-    if (!document.querySelector('link[data-debt-snowball-font]')) {
-        const fontLink = document.createElement('link');
-        fontLink.rel = 'stylesheet';
-        fontLink.setAttribute('data-debt-snowball-font', '1');
-        fontLink.href = 'https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap';
-        document.head.appendChild(fontLink);
+        // Load Google Fonts
+        if (!document.querySelector('link[data-debt-snowball-font]')) {
+            const fontLink = document.createElement('link');
+            fontLink.rel = 'stylesheet';
+            fontLink.setAttribute('data-debt-snowball-font', '1');
+            fontLink.href = 'https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap';
+            document.head.appendChild(fontLink);
+        }
+
+        // Inject styles directly into the component to bypass HA's Shadow DOM blocking
+        const styleEl = document.createElement('style');
+        styleEl.textContent = PANEL_CSS;
+        this.appendChild(styleEl);
+
+        // Inject HTML
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = PANEL_HTML;
+        while (wrapper.firstChild) this.appendChild(wrapper.firstChild);
+
+        // Load Chart.js then initialize the app
+        this._loadChartJs().then(() => {
+        this._initApp();
+        });
     }
-
-    // Inject styles directly into the component to bypass HA's Shadow DOM blocking
-    const styleEl = document.createElement('style');
-    styleEl.textContent = PANEL_CSS;
-    this.appendChild(styleEl);
-
-    // Inject HTML
-    const wrapper = document.createElement('div');
-    wrapper.innerHTML = PANEL_HTML;
-    while (wrapper.firstChild) this.appendChild(wrapper.firstChild);
-
-    // Load Chart.js then initialize the app
-    this._loadChartJs().then(() => {
-      this._initApp();
-    });
-  }
 
   disconnectedCallback() {
     // Clean up interval if panel is removed
@@ -2462,12 +2464,67 @@ const importFileInput       = _root.getElementById('import-file');
 const windfallModal         = _root.getElementById('windfall-modal');
 const checkinModal          = _root.getElementById('checkin-modal');
 
-// ─── Init ────────────────────────────────────────────────────────────────────
-function init() {
-    loadData();
-    setupEventListeners();
+// ─── HA Backend Data Storage ────────────────────────────────────────────────
+
+// 1. Fetch data from HA Server
+async function loadBackendData() {
+    try {
+        // Call the native HA WebSocket API for user data
+        const response = await _root._hass.callWS({
+            type: 'frontend/get_user_data',
+            key: 'debt_snowball_data'
+        });
+
+        // Unpack the data if it exists
+        if (response && response.value) {
+            const data = response.value;
+            debts = data.debts || [];
+            recurringCosts = data.recurringCosts || [];
+            incomeEntries = data.incomeEntries || [];
+            strategy = data.strategy || 'snowball';
+            startingBalance = data.startingBalance || 0;
+            
+            // Restore active tab
+            if (data.activeTab) {
+                const savedBtn = _root.querySelector(`.tab-btn[data-tab="${data.activeTab}"]`);
+                if (savedBtn) savedBtn.click();
+            }
+        }
+    } catch (err) {
+        // This just means the key doesn't exist yet (first time running), which is perfectly fine.
+        console.log("No existing debt snowball data found on server. Starting fresh.");
+    }
+
+    // Now that data is loaded, render the UI and hook up the tabs
+    initTabs();
     renderUI();
-    maybeShowCheckin();
+}
+
+// 2. Push data to HA Server
+function saveData() {
+    if (!_root._hass) return;
+
+    // Find whichever tab is currently active so we can save the user's view state
+    const activeTabEl = _root.querySelector('.tab-btn.active');
+    const activeTab = activeTabEl ? activeTabEl.dataset.tab : 'debts';
+
+    const dataPayload = {
+        debts,
+        recurringCosts,
+        incomeEntries,
+        strategy,
+        startingBalance,
+        activeTab
+    };
+
+    // Silently push the entire JSON payload to the Home Assistant database
+    _root._hass.callWS({
+        type: 'frontend/set_user_data',
+        key: 'debt_snowball_data',
+        value: dataPayload
+    }).catch(err => {
+        console.error("Failed to save Debt Snowball data to HA backend:", err);
+    });
 }
 
 // ─── LocalStorage ────────────────────────────────────────────────────────────
@@ -2529,24 +2586,6 @@ function loadData() {
 function currentMonthKey() {
     const d = new Date();
     return `${d.getFullYear()}-${d.getMonth()}`;
-}
-
-function saveData() {
-    localStorage.setItem('snowball_debts',     JSON.stringify(debts));
-    localStorage.setItem('snowball_recurring', JSON.stringify(recurringCosts));
-    localStorage.setItem('snowball_income',    JSON.stringify(incomeEntries));
-    localStorage.setItem('snowball_checkpoints', JSON.stringify(checkpoints));
-    localStorage.setItem('snowball_starting_balance', Number(startingBalance).toFixed(2));
-    localStorage.setItem('snowball_strategy',  strategy);
-    localStorage.setItem('snowball_paid',      JSON.stringify(paidStatus));
-    localStorage.setItem('snowball_paid_month', currentMonthKey());
-    renderUI();
-}
-
-function savePaidStatus() {
-    localStorage.setItem('snowball_paid',       JSON.stringify(paidStatus));
-    localStorage.setItem('snowball_paid_month', currentMonthKey());
-    renderUI();
 }
 
 // ─── Event Listeners ─────────────────────────────────────────────────────────
