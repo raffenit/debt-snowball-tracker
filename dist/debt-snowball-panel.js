@@ -397,28 +397,134 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     border: 1px dashed var(--border-color);
 }
 
+/* ===== Tablet (≤ 1024px) ===== */
+@media (max-width: 1024px) {
+    .app-container {
+        max-width: 100%;
+        padding: 1.5rem 1.25rem;
+    }
+
+    .summary-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .debts-list {
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    }
+
+    #debt-form {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .windfall-comparison {
+        flex-direction: column;
+    }
+
+    .windfall-arrow {
+        transform: rotate(90deg);
+        align-self: center;
+    }
+
+    .schedule-balance-col {
+        min-width: 90px;
+    }
+
+    .schedule-amount-col {
+        min-width: 80px;
+    }
+}
+
+/* ===== Mobile (≤ 640px) ===== */
 @media (max-width: 640px) {
+    .app-container {
+        padding: 1rem 0.75rem;
+    }
+
     .header {
         flex-direction: column;
         align-items: flex-start;
-        gap: 1rem;
+        gap: 0.75rem;
     }
-    
+
+    .header h1 {
+        font-size: 1.5rem;
+    }
+
+    .header-actions {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .header-actions .btn {
+        flex: 1;
+        min-width: 0;
+        font-size: 0.8rem;
+        padding: 0.5rem 0.75rem;
+    }
+
     .debts-list {
         grid-template-columns: 1fr;
     }
-    
-    .card {
-        padding: 1.25rem;
+
+    .summary-stats {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
     }
-    
+
+    .stat-value {
+        font-size: 1.2rem;
+    }
+
+    .card {
+        padding: 1rem 1rem;
+    }
+
+    .modal {
+        align-items: flex-end;
+    }
+
     .modal-content {
-        padding: 1.5rem;
-        margin: 1rem;
+        padding: 1.25rem;
+        margin: 0;
+        border-radius: var(--radius) var(--radius) 0 0;
+        max-width: 100% !important;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    #debt-form {
+        grid-template-columns: 1fr;
+    }
+
+    #promo-expiry-group {
+        grid-column: 1;
+    }
+
+    .tab-nav {
+        padding: 0.25rem;
+        gap: 0.15rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .tab-btn {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+    }
+
+    .schedule-header {
+        display: none;
+    }
+
+    .schedule-row {
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        padding: 0.75rem 0.75rem;
     }
 
     .schedule-date-col {
         width: 100%;
+        min-width: 0;
     }
 
     .schedule-info-col {
@@ -426,9 +532,140 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         min-width: 0;
     }
 
-    .schedule-amount-col,
-    .schedule-balance-col {
+    .schedule-amount-col {
+        min-width: 0;
         font-size: 0.9rem !important;
+    }
+
+    .schedule-balance-col {
+        font-size: 0.85rem !important;
+        min-width: 0;
+        padding: 0.2rem 0.5rem;
+    }
+
+    .schedule-action-col {
+        min-width: 0;
+    }
+
+    .windfall-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .btn-windfall {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .income-summary,
+    .debt-payments-summary,
+    .recurring-cost-summary {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .section-header .btn {
+        width: 100%;
+    }
+
+    .debt-actions {
+        flex-direction: row;
+        gap: 0.5rem;
+    }
+
+    .modal-actions {
+        flex-direction: column-reverse;
+    }
+
+    .modal-actions .btn {
+        width: 100%;
+    }
+
+    .viz-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .strategy-toggle {
+        width: 100%;
+    }
+
+    .strategy-btn {
+        flex: 1;
+        text-align: center;
+    }
+}
+
+/* ===== Small phone (≤ 480px) ===== */
+@media (max-width: 480px) {
+    .app-container {
+        padding: 0.75rem 0.5rem;
+    }
+
+    .header h1 {
+        font-size: 1.25rem;
+    }
+
+    .summary-stats {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+    }
+
+    .stat-box {
+        padding: 0.875rem 0.75rem;
+    }
+
+    .stat-value {
+        font-size: 1.1rem;
+    }
+
+    .stat-countdown-value {
+        font-size: 1.75rem !important;
+    }
+
+    .card {
+        padding: 0.875rem 0.75rem;
+    }
+
+    .tab-btn {
+        padding: 0.45rem 0.5rem;
+        font-size: 0.75rem;
+    }
+
+    .timeline-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .debt-card {
+        padding: 1.1rem 0.875rem;
+    }
+
+    .debt-name {
+        font-size: 1rem;
+    }
+
+    h2 {
+        font-size: 1rem;
+    }
+
+    .undo-toast {
+        left: 0.5rem;
+        right: 0.5rem;
+        min-width: 0;
+        transform: translateX(0) translateY(120%);
+        white-space: normal;
+    }
+
+    .undo-toast-visible {
+        transform: translateX(0) translateY(0);
     }
 }
 
