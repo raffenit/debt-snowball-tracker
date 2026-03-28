@@ -32,6 +32,10 @@ const PANEL_CSS = `:root {
     --border-bright: #2e3888;      /* Brighter blue-indigo border */
     --radius: 12px;
     --transition: all 0.2s ease;
+    --promo-color: #a855f7;        /* 0% promo / BNPL rate */
+    --promo-light: #c084fc;        /* Promo text accents */
+    --teal-color: #2dd4bf;         /* Direct-pay cost accent */
+    --expense-color: #f87171;      /* Expense row amounts */
 }
 
 * {
@@ -468,6 +472,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         flex-direction: column;
         align-items: flex-start;
         gap: 0.875rem;
+        margin-bottom: 1.25rem;
     }
 
     .header h1 {
@@ -564,10 +569,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         padding: 0.3rem;
         gap: 0.2rem;
         margin-bottom: 1.25rem;
+        overflow-x: visible;
     }
 
     .tab-btn {
-        padding: 0.625rem 0.875rem;
+        flex: 1;
+        justify-content: center;
+        padding: 0.625rem 0.5rem;
         font-size: 0.85rem;
         min-height: 40px;
     }
@@ -723,6 +731,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     .toggle-label {
         font-size: 0.95rem;
     }
+
+    debt-snowball-panel .tab-panel.active {
+        gap: 1.5rem;
+    }
+
+    .main-content {
+        gap: 1.5rem;
+    }
 }
 
 /* ===== Small phone (≤ 480px) ===== */
@@ -765,8 +781,16 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     }
 
     .tab-btn {
-        padding: 0.6rem 0.625rem;
+        padding: 0.6rem 0.375rem;
         font-size: 0.8rem;
+    }
+
+    .tab-label {
+        display: none;
+    }
+
+    .tab-icon {
+        font-size: 1.15rem;
     }
 
     .timeline-header {
@@ -904,12 +928,12 @@ debt-snowball-panel .tab-panel.active .stat-box:nth-child(4) { animation-delay: 
 
 /* Direct Pay variant — teal/green accent */
 .cost-card-direct {
-    border-left-color: #2dd4bf !important;
+    border-left-color: var(--teal-color) !important;
     background: linear-gradient(160deg, rgba(20, 184, 166, 0.06) 0%, var(--card-bg) 60%) !important;
 }
 
 .cost-card-direct:hover {
-    border-color: #2dd4bf !important;
+    border-color: var(--teal-color) !important;
     box-shadow: 0 10px 20px -4px rgba(20, 184, 166, 0.18) !important;
 }
 
@@ -926,7 +950,7 @@ debt-snowball-panel .tab-panel.active .stat-box:nth-child(4) { animation-delay: 
 
 /* Amount value colour per card type */
 .cost-card-direct .cost-amount {
-    color: #2dd4bf !important;
+    color: var(--teal-color) !important;
 }
 
 .cost-card-credit .cost-amount {
@@ -1203,7 +1227,7 @@ debt-snowball-panel .tab-panel.active .stat-box:nth-child(4) { animation-delay: 
 }
 
 .schedule-amount-expense {
-    color: #f87171;
+    color: var(--expense-color);
 }
 
 .schedule-balance-col {
@@ -1264,7 +1288,7 @@ debt-snowball-panel .tab-panel.active .stat-box:nth-child(4) { animation-delay: 
 
 .schedule-badge-unpaid {
     background: rgba(239, 68, 68, 0.15);
-    color: #f87171;
+    color: var(--expense-color);
     border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
@@ -1384,7 +1408,7 @@ debt-snowball-panel .tab-panel.active .stat-box:nth-child(4) { animation-delay: 
 
 .toggle-switch input:checked + .toggle-slider::before {
     transform: translateX(22px);
-    background-color: #a855f7;
+    background-color: var(--promo-color);
 }
 
 /* ===== Promo Expiry Field ===== */
@@ -1395,7 +1419,7 @@ debt-snowball-panel .tab-panel.active .stat-box:nth-child(4) { animation-delay: 
 /* ===== Promo Badge ===== */
 .promo-badge {
     background: rgba(168, 85, 247, 0.15);
-    color: #c084fc;
+    color: var(--promo-light);
     padding: 0.15rem 0.5rem;
     border-radius: 12px;
     font-size: 0.7rem;
@@ -1453,23 +1477,23 @@ debt-snowball-panel .tab-panel.active .stat-box:nth-child(4) { animation-delay: 
 
 /* ===== Promo Card Accent ===== */
 .promo-card {
-    border-left: 4px solid #a855f7 !important;
+    border-left: 4px solid var(--promo-color) !important;
 }
 
 .promo-card:hover {
-    border-color: #a855f7 !important;
+    border-color: var(--promo-color) !important;
     box-shadow: 0 10px 15px -3px rgba(168, 85, 247, 0.15) !important;
 }
 
 .promo-auto-note {
     font-size: 0.7rem;
-    color: #c084fc;
+    color: var(--promo-light);
     font-style: italic;
     margin-left: 0.25rem;
 }
 
 .promo-expiry-value {
-    color: #c084fc !important;
+    color: var(--promo-light) !important;
     font-weight: 600;
 }
 
@@ -1824,8 +1848,8 @@ debt-snowball-panel .tab-panel.active .stat-box:nth-child(4) { animation-delay: 
 
 .btn-mark-paid-done:hover {
     background: rgba(239,68,68,0.15);
-    border-color: #f87171;
-    color: #f87171;
+    border-color: var(--expense-color);
+    color: var(--expense-color);
 }
 
 /* ===== Green Toggle Slider ===== */
@@ -2327,10 +2351,10 @@ const PANEL_HTML = `<div class="app-container">
         </header>
 
         <nav class="tab-nav">
-            <button class="tab-btn active" data-tab="payment-plan">&#128197; Payment Plan</button>
-            <button class="tab-btn" data-tab="income">&#128176; Income &amp; Budget</button>
-            <button class="tab-btn" data-tab="debts">&#128179; Debts</button>
-            <button class="tab-btn" data-tab="timeline">&#128202; Timeline</button>
+            <button class="tab-btn active" data-tab="payment-plan"><span class="tab-icon">&#128197;</span><span class="tab-label"> Plan</span></button>
+            <button class="tab-btn" data-tab="income"><span class="tab-icon">&#128176;</span><span class="tab-label"> Budget</span></button>
+            <button class="tab-btn" data-tab="debts"><span class="tab-icon">&#128179;</span><span class="tab-label"> Debts</span></button>
+            <button class="tab-btn" data-tab="timeline"><span class="tab-icon">&#128202;</span><span class="tab-label"> Timeline</span></button>
         </nav>
 
         <main class="main-content">
@@ -2381,7 +2405,7 @@ const PANEL_HTML = `<div class="app-container">
                         </div>
                         <div style="display: flex; flex-direction: column; align-items: center; gap: 0.25rem;">
                             <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">Total Expenses</span>
-                            <span id="payment-plan-total-expenses" style="color: #f87171;">-</span>
+                            <span id="payment-plan-total-expenses" style="color: var(--expense-color);">-</span>
                         </div>
                         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem;">
                             <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">Next Month Start</span>
@@ -4506,7 +4530,7 @@ function renderPaymentPlan() {
             
         } else if (item.type === 'checkpoint') {
             icon        = '⚖️';
-            typeBadge   = '<span class="schedule-badge schedule-badge-start" style="background:rgba(168,85,247,0.15);color:#c084fc;border-color:rgba(168,85,247,0.3);">Manual Sync</span>';
+            typeBadge   = '<span class="schedule-badge schedule-badge-start" style="background:rgba(168,85,247,0.15);color:var(--promo-light);border-color:rgba(168,85,247,0.3);">Manual Sync</span>';
             amountClass = ''; 
             dayLabel    = formatOrdinal(item.day);
             rowBgClass  = 'schedule-checkpoint';
