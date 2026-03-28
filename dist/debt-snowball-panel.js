@@ -2830,127 +2830,136 @@ const windfallModal         = _root.getElementById('windfall-modal');
 const checkinModal          = _root.getElementById('checkin-modal');
 
 // ─── HA Backend Data Storage ─────────────────────────────────────────────────
-// Data is stored as a shared HA sensor state (sensor.snowball_app_data) so that
-// ALL users on the Home Assistant server see the same data, regardless of which
-// account they're logged in with.  The previous implementation used
-// frontend/get_user_data + frontend/set_user_data which are scoped per-user.
+// Storage: input_text helpers, auto-created on first run via the same WebSocket
+// API the HA Settings → Helpers UI uses. No YAML configuration required.
+// Helpers persist in .storage/input_text.json and survive restarts.
+// All data is shared across every user on the server.
+//
+// Chunk count is dynamic: the code writes as many snowball_data_N helpers as
+// the JSON requires, creating new ones automatically if data grows.
+// Only the active-tab preference is kept in localStorage (genuine per-browser UI state).
 
-const SHARED_STATE_ENTITY = 'sensor.snowball_app_data';
+const CHUNK_PREFIX = 'input_text.snowball_data_';
+const CHUNK_SIZE   = 5000; // chars per helper
 
-// 1. Fetch shared data from HA Server
+function chunkString(str, size) {
+    const chunks = [];
+    for (let i = 0; i < str.length; i += size) chunks.push(str.slice(i, i + size));
+    return chunks;
+}
+
+// Return all currently registered snowball_data_N helpers in index order.
+function availableChunkEntities() {
+    const states = _root._hass?.states || {};
+    const ordered = [];
+    let i = 0;
+    while (`${CHUNK_PREFIX}${i}` in states) { ordered.push(`${CHUNK_PREFIX}${i}`); i++; }
+    return ordered;
+}
+
+// Ensure at least `count` snowball_data_N helpers exist, creating any that are missing.
+async function ensureChunkHelpers(count) {
+    const states = _root._hass?.states || {};
+    for (let i = 0; i < count; i++) {
+        const entityId = `${CHUNK_PREFIX}${i}`;
+        if (entityId in states) continue; // already exists
+
+        try {
+            await _root._hass.connection.sendMessagePromise({
+                type: 'input_text/create',
+                name: `Snowball Data ${i}`,
+                max: 255,       // HA UI default; actual stored value is unlimited via service
+                mode: 'text',
+            });
+            console.log(`Debt Snowball: created helper ${entityId}`);
+        } catch (err) {
+            console.error(`Debt Snowball: could not create helper ${entityId} —`, err);
+            throw err; // Abort save if we can't create a required helper
+        }
+
+        // Give HA a moment to register the new entity in its state machine
+        await new Promise(r => setTimeout(r, 300));
+    }
+}
+
+// ─── 1. Load ─────────────────────────────────────────────────────────────────
 async function loadBackendData() {
     try {
-        // Read the shared sensor state that holds our JSON payload
-        const response = await _root._hass.callApi('GET', `states/${SHARED_STATE_ENTITY}`);
+        const entities = availableChunkEntities();
 
-        if (response && response.attributes && response.attributes.payload) {
-            const data = response.attributes.payload;
-            debts          = data.debts          || [];
-            recurringCosts = data.recurringCosts  || [];
-            incomeEntries  = data.incomeEntries   || [];
-            strategy       = data.strategy        || 'snowball';
-            startingBalance = data.startingBalance || 0;
+        if (entities.length > 0) {
+            const states   = _root._hass.states;
+            const fullJson = entities
+                .map(id => {
+                    const val = states[id]?.state ?? '';
+                    return (val === 'unavailable' || val === 'unknown') ? '' : val;
+                })
+                .join('');
 
-            // Restore active tab
-            if (data.activeTab) {
-                const savedBtn = _root.querySelector(`.tab-btn[data-tab="${data.activeTab}"]`);
-                if (savedBtn) savedBtn.click();
+            if (fullJson.trim()) {
+                const data      = JSON.parse(fullJson);
+                debts           = data.debts          || [];
+                recurringCosts  = data.recurringCosts  || [];
+                incomeEntries   = data.incomeEntries   || [];
+                checkpoints     = data.checkpoints     || [];
+                strategy        = data.strategy        || 'snowball';
+                startingBalance = data.startingBalance || 0;
+
+                // Restore shared paid status; auto-reset when the month rolls over
+                if (data.paidMonth === currentMonthKey() && data.paidStatus) {
+                    paidStatus = data.paidStatus;
+                } else {
+                    paidStatus = {};
+                }
             }
         }
+        // If no helpers exist yet this is simply a first run — start empty, helpers
+        // will be created automatically on the first saveData() call.
     } catch (err) {
-        // 404 just means the sensor doesn't exist yet — first run is fine.
-        console.log("No shared debt snowball data found on server. Starting fresh.");
+        console.error('Debt Snowball: error loading server data —', err);
     }
 
-    // Now that data is loaded, render the UI and hook up the tabs
+    // Active tab is the one genuine per-browser preference
+    const savedTab = localStorage.getItem('snowball_active_tab');
+    if (savedTab) {
+        const savedBtn = _root.querySelector(`.tab-btn[data-tab="${savedTab}"]`);
+        if (savedBtn) savedBtn.click();
+    }
+
     initTabs();
     renderUI();
 }
 
-// 2. Push shared data to HA Server
-function saveData() {
+// ─── 2. Save ─────────────────────────────────────────────────────────────────
+async function saveData() {
     if (!_root._hass) return;
 
-    // Find whichever tab is currently active so we can save the user's view state
+    // Active tab stays in the browser
     const activeTabEl = _root.querySelector('.tab-btn.active');
-    const activeTab   = activeTabEl ? activeTabEl.dataset.tab : 'debts';
+    if (activeTabEl) localStorage.setItem('snowball_active_tab', activeTabEl.dataset.tab);
 
-    const dataPayload = {
-        debts,
-        recurringCosts,
-        incomeEntries,
-        strategy,
-        startingBalance,
-        activeTab
-    };
-
-    // Write to a shared sensor entity — visible and editable by all HA users
-    _root._hass.callApi('POST', `states/${SHARED_STATE_ENTITY}`, {
-        state: 'active',
-        attributes: {
-            friendly_name: 'Debt Snowball App Data',
-            icon: 'mdi:credit-card-minus',
-            payload: dataPayload
-        }
-    }).catch(err => {
-        console.error("Failed to save Debt Snowball data to HA backend:", err);
+    const json   = JSON.stringify({
+        debts, recurringCosts, incomeEntries, checkpoints,
+        strategy, startingBalance,
+        paidStatus, paidMonth: currentMonthKey()
     });
-}
+    const chunks = chunkString(json, CHUNK_SIZE);
 
-// ─── LocalStorage ────────────────────────────────────────────────────────────
-function loadData() {
-    const storedDebts        = localStorage.getItem('snowball_debts');
-    const storedCosts        = localStorage.getItem('snowball_recurring');
-    const storedIncome       = localStorage.getItem('snowball_income');
-    const storedCheckpoints  = localStorage.getItem('snowball_checkpoints');
-    const storedBalance      = localStorage.getItem('snowball_starting_balance');
-    const storedStrategy     = localStorage.getItem('snowball_strategy');
-    const storedPaid         = localStorage.getItem('snowball_paid');
-    const paidMonth          = localStorage.getItem('snowball_paid_month');
-
-    if (storedDebts) {
-        debts = JSON.parse(storedDebts).map(debt => ({
-            type: 'credit-card',
-            ...debt
-        }));
-    }
-    if (storedCosts) {
-        recurringCosts = JSON.parse(storedCosts).map(cost => ({
-            paymentMethod: 'direct',
-            ...cost
-        }));
-    }
-    if (storedIncome)      incomeEntries = JSON.parse(storedIncome);
-    if (storedCheckpoints) checkpoints   = JSON.parse(storedCheckpoints);
-    if (storedBalance)     startingBalance = parseFloat(storedBalance) || 0;
-    if (storedStrategy)    strategy = storedStrategy;
-
-    // Reset paid status if we've rolled into a new calendar month
-    const thisMonth = currentMonthKey();
-    if (storedPaid && paidMonth === thisMonth) {
-        paidStatus = JSON.parse(storedPaid);
-    } else {
-        paidStatus = {};
-        localStorage.setItem('snowball_paid_month', thisMonth);
-        localStorage.setItem('snowball_paid', JSON.stringify(paidStatus));
+    // Auto-create any helpers we don't have yet (first run, or data grew)
+    try {
+        await ensureChunkHelpers(chunks.length);
+    } catch {
+        return; // ensureChunkHelpers already logged the error
     }
 
-    // Migrate old budget
-    const oldBudget = localStorage.getItem('snowball_budget');
-    if (oldBudget && incomeEntries.length === 0) {
-        const amt = parseFloat(oldBudget);
-        if (amt > 0) {
-            const now = new Date();
-            incomeEntries.push({
-                id: Date.now().toString(),
-                label: 'Monthly Budget (migrated)',
-                date: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`,
-                amount: amt
-            });
-            localStorage.removeItem('snowball_budget');
-            localStorage.setItem('snowball_income', JSON.stringify(incomeEntries));
-        }
-    }
+    // Write all chunks; clear any extras left over from a previous smaller save
+    const entities = availableChunkEntities();
+    entities.forEach((entityId, i) => {
+        _root._hass.callService('input_text', 'set_value', {
+            entity_id: entityId,
+            value: chunks[i] ?? ''
+        }).catch(err => console.error(`Debt Snowball: failed writing ${entityId} —`, err));
+    });
 }
 
 function currentMonthKey() {
