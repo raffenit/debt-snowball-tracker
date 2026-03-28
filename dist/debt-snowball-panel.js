@@ -2869,8 +2869,9 @@ async function ensureStoreDashboard() {
             require_admin:    false,
         });
     } catch (err) {
-        // "already exists" errors are fine — another user may have created it first
-        if (!String(err).includes('already')) {
+        // "already exists" / duplicate key errors are fine — another user may have created it first.
+        const msg = String(err?.message ?? err).toLowerCase();
+        if (!msg.includes('already') && !msg.includes('duplicate') && !msg.includes('exists')) {
             throw err;
         }
     }
@@ -2901,8 +2902,10 @@ async function loadBackendData() {
             }
         }
     } catch (err) {
-        // Config not found = first run. That's fine — start empty.
-        if (!String(err).includes('not found') && !String(err).includes('config_not_found')) {
+        // A "not found" / "config_not_found" error just means first run — start empty.
+        // Any other error (network, auth, etc.) is worth logging.
+        const msg = String(err?.message ?? err).toLowerCase();
+        if (!msg.includes('not_found') && !msg.includes('not found') && !msg.includes('config_not_found')) {
             console.error('Debt Snowball: error loading data —', err);
         }
     }
@@ -2926,21 +2929,17 @@ async function saveData() {
     const activeTabEl = _root.querySelector('.tab-btn.active');
     if (activeTabEl) localStorage.setItem('snowball_active_tab', activeTabEl.dataset.tab);
 
-    try {
-        await ensureStoreDashboard();
+    await ensureStoreDashboard();
 
-        await _root._hass.connection.sendMessagePromise({
-            type:      'lovelace/config/save',
-            url_path:  STORE_URL_PATH,
-            config:    {
-                debts, recurringCosts, incomeEntries, checkpoints,
-                strategy, startingBalance,
-                paidStatus, paidMonth: currentMonthKey(),
-            },
-        });
-    } catch (err) {
-        console.error('Debt Snowball: failed to save data —', err);
-    }
+    await _root._hass.connection.sendMessagePromise({
+        type:      'lovelace/config/save',
+        url_path:  STORE_URL_PATH,
+        config:    {
+            debts, recurringCosts, incomeEntries, checkpoints,
+            strategy, startingBalance,
+            paidStatus, paidMonth: currentMonthKey(),
+        },
+    });
 }
 
 function currentMonthKey() {
@@ -2974,7 +2973,7 @@ function setupEventListeners() {
         startingBalanceInput.addEventListener('input', () => {
             const value = parseFloat(startingBalanceInput.value);
             startingBalance = Number.isFinite(value) ? value : 0;
-            saveData();
+            saveData().catch(err => console.error("Debt Snowball: save failed —", err));
         });
     }
 
@@ -2983,7 +2982,7 @@ function setupEventListeners() {
         const id = _root.getElementById('checkpoint-id').value;
         if (id) {
             checkpoints = checkpoints.filter(c => c.id !== id);
-            saveData();
+            saveData().catch(err => console.error("Debt Snowball: save failed —", err));
             closeCheckpointModal();
             showSavedToast('Checkpoint removed ✓');
         }
@@ -3018,7 +3017,7 @@ function setupEventListeners() {
             strategy = btn.dataset.strategy;
             _root.querySelectorAll('.strategy-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            saveData();
+            saveData().catch(err => console.error("Debt Snowball: save failed —", err));
         });
     });
 
@@ -3330,7 +3329,7 @@ function saveDebt() {
             debts.push({ id: Date.now().toString(), ...debtData });
         }
 
-        saveData();
+        saveData().catch(err => console.error("Debt Snowball: save failed —", err));
         closeDebtModal();
         showSavedToast(id ? 'Debt updated ✓' : 'Debt added ✓');
     } catch (err) {
@@ -3343,8 +3342,8 @@ function deleteDebt(id) {
         const deleted = debts.find(d => d.id === id);
         debts = debts.filter(d => d.id !== id);
         delete paidStatus[id];
-        saveData();
-        showUndoToast('Debt deleted', () => { debts.push(deleted); saveData(); });
+        saveData().catch(err => console.error("Debt Snowball: save failed —", err));
+        showUndoToast('Debt deleted', () => { debts.push(deleted); saveData().catch(err => console.error('Debt Snowball: save failed —', err)); });
     });
 }
 
@@ -3369,7 +3368,7 @@ function saveCost() {
             recurringCosts.push({ id: Date.now().toString(), name, amount, dueDay, paymentMethod, amountType, autoPay });
         }
 
-        saveData();
+        saveData().catch(err => console.error("Debt Snowball: save failed —", err));
         closeCostModal();
         showSavedToast(id ? 'Cost updated ✓' : 'Cost added ✓');
     } catch (err) {
@@ -3382,8 +3381,8 @@ function deleteCost(id) {
         const deleted = recurringCosts.find(c => c.id === id);
         recurringCosts = recurringCosts.filter(c => c.id !== id);
         delete paidStatus[id];
-        saveData();
-        showUndoToast('Recurring cost deleted', () => { recurringCosts.push(deleted); saveData(); });
+        saveData().catch(err => console.error("Debt Snowball: save failed —", err));
+        showUndoToast('Recurring cost deleted', () => { recurringCosts.push(deleted); saveData().catch(err => console.error('Debt Snowball: save failed —', err)); });
     });
 }
 
@@ -3406,7 +3405,7 @@ function saveIncome() {
             incomeEntries.push({ id: Date.now().toString(), label, date, amount });
         }
 
-        saveData();
+        saveData().catch(err => console.error("Debt Snowball: save failed —", err));
         closeIncomeModal();
         showSavedToast(id ? 'Income updated ✓' : 'Income added ✓');
     } catch (err) {
@@ -3418,8 +3417,8 @@ function deleteIncome(id) {
     showInlineConfirm(id, 'income', () => {
         const deleted = incomeEntries.find(e => e.id === id);
         incomeEntries = incomeEntries.filter(e => e.id !== id);
-        saveData();
-        showUndoToast('Income entry deleted', () => { incomeEntries.push(deleted); saveData(); });
+        saveData().catch(err => console.error("Debt Snowball: save failed —", err));
+        showUndoToast('Income entry deleted', () => { incomeEntries.push(deleted); saveData().catch(err => console.error('Debt Snowball: save failed —', err)); });
     });
 }
 
@@ -3429,13 +3428,12 @@ function togglePaid(id, autoPay) {
     if (paidStatus[id]) {
         delete paidStatus[id];
     } else {
-        paidStatus[id]   = autoPay ? 'autopay' : 'paid';
-        // Fire confetti if this is a debt being marked paid
+        paidStatus[id] = autoPay ? 'autopay' : 'paid';
         if (wasUnpaid && debts.find(d => d.id === id)) {
             launchConfetti();
         }
     }
-    savePaidStatus();
+    saveData().catch(err => console.error('Debt Snowball: save failed —', err));
 }
 
 // ─── Inline Confirm & Undo Toast ─────────────────────────────────────────────
@@ -3524,9 +3522,15 @@ function importData(e) {
 
     const doImport = () => {
         const reader = new FileReader();
-        reader.onload = ev => {
+        reader.onload = async ev => {
+            let data;
             try {
-                const data = JSON.parse(ev.target.result);
+                data = JSON.parse(ev.target.result);
+            } catch {
+                showNotificationToast('Error: Invalid backup file — could not parse JSON.', 'error');
+                return;
+            }
+            try {
                 if (data.debts)          debts          = data.debts;
                 if (data.recurringCosts) recurringCosts = data.recurringCosts;
                 if (data.incomeEntries)  incomeEntries  = data.incomeEntries;
@@ -3538,9 +3542,12 @@ function importData(e) {
                         date: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`,
                         amount: data.monthlyBudget }];
                 }
-                saveData().then(() => location.reload());
-                showUndoToast('Data imported successfully', () => {});
-            } catch { showNotificationToast('Error: Invalid backup file.', 'error'); }
+                await saveData();
+                location.reload();
+            } catch (err) {
+                console.error('Debt Snowball: import save failed —', err);
+                showNotificationToast('Error: Data parsed but could not be saved to server.', 'error');
+            }
         };
         reader.readAsText(file);
         e.target.value = '';
