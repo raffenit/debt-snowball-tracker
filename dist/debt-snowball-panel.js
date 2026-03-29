@@ -100,6 +100,8 @@ body {
 .btn-primary {
     background-color: var(--accent-color);
     color: white;
+    position: relative;
+    overflow: hidden;
 }
 
 .btn-primary:hover {
@@ -108,25 +110,55 @@ body {
     box-shadow: 0 4px 16px var(--accent-glow);
 }
 
+.btn-primary:active {
+    transform: translateY(0) scale(0.97);
+    box-shadow: none;
+}
+
 .btn-secondary {
     background-color: transparent;
     border: 1px solid var(--border-color);
     color: var(--text-primary);
+    position: relative;
+    overflow: hidden;
 }
 
 .btn-secondary:hover {
     background-color: rgba(255, 255, 255, 0.05);
+    border-color: var(--border-bright);
+}
+
+.btn-secondary:active {
+    transform: scale(0.97);
 }
 
 .btn-danger {
     background-color: transparent;
     border: 1px solid var(--danger-color);
     color: var(--danger-color);
+    position: relative;
+    overflow: hidden;
 }
 
 .btn-danger:hover {
     background-color: var(--danger-color);
     color: white;
+}
+
+.btn-danger:active {
+    transform: scale(0.97);
+}
+
+/* Ripple effect layer */
+.btn-ripple {
+    position: absolute;
+    border-radius: 50%;
+    width: 6px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.35);
+    pointer-events: none;
+    animation: ripple 0.5s ease-out forwards;
+    transform-origin: center;
 }
 
 .main-content {
@@ -226,16 +258,16 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     border-radius: var(--radius);
     padding: 1.5rem;
     border: 1px solid var(--border-color);
-    transition: var(--transition);
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.22s ease, border-color 0.22s ease;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
 }
 
 .debt-card:hover {
-    border-color: var(--accent-color);
-    transform: translateY(-4px);
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(91, 127, 255, 0.2);
+    border-color: rgba(91,127,255,0.45);
+    transform: translateY(-3px);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(91, 127, 255, 0.18), 0 0 24px rgba(91,127,255,0.06);
 }
 
 .debt-name {
@@ -400,6 +432,37 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     background-color: rgba(7, 6, 26, 0.4);
     border-radius: var(--radius);
     border: 1px dashed var(--border-color);
+    font-size: 0.9rem;
+    line-height: 1.7;
+    animation: fadeIn 0.4s ease;
+}
+
+.empty-state .empty-cta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 1.1rem;
+    padding: 0.55rem 1.25rem;
+    background: rgba(91,127,255,0.12);
+    border: 1px solid rgba(91,127,255,0.3);
+    border-radius: var(--radius);
+    color: var(--accent-color);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+
+.empty-state .empty-cta-btn:hover {
+    background: rgba(91,127,255,0.2);
+    border-color: var(--accent-color);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(91,127,255,0.2);
+}
+
+.empty-state .empty-cta-btn:active {
+    transform: scale(0.97) translateY(0);
 }
 
 /* ===== Tablet (≤ 1024px) ===== */
@@ -811,6 +874,48 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     }
 }
 
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(14px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(244, 88, 122, 0); }
+    50%       { box-shadow: 0 0 0 6px rgba(244, 88, 122, 0.22); }
+}
+
+@keyframes progressFill {
+    from { width: 0 !important; }
+}
+
+@keyframes ripple {
+    from { transform: scale(0); opacity: 0.5; }
+    to   { transform: scale(3); opacity: 0; }
+}
+
+@keyframes paidPulse {
+    0%   { transform: scale(1); }
+    35%  { transform: scale(1.07); }
+    65%  { transform: scale(0.97); }
+    100% { transform: scale(1); }
+}
+
+@keyframes inlineFormIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes expenseFadeOut {
+    from { opacity: 1; transform: translateX(0); max-height: 60px; }
+    to   { opacity: 0; transform: translateX(16px); max-height: 0; padding: 0; }
+}
+
 /* Animate section headers when tab becomes active */
 debt-snowball-panel .tab-panel.active .section-header {
     animation: slideInLeft 0.35s cubic-bezier(0.16, 1, 0.3, 1) backwards;
@@ -846,6 +951,8 @@ debt-snowball-panel .tab-panel.active .stat-box:nth-child(4) { animation-delay: 
     background-color: var(--warning-color);
     color: #07061a;
     font-weight: 600;
+    position: relative;
+    overflow: hidden;
 }
 
 .btn-warning:hover {
@@ -854,17 +961,29 @@ debt-snowball-panel .tab-panel.active .stat-box:nth-child(4) { animation-delay: 
     box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
 }
 
+.btn-warning:active {
+    transform: scale(0.97) translateY(0);
+    box-shadow: none;
+}
+
 /* ===== Success Button ===== */
 .btn-success {
     background-color: var(--success-color);
     color: white;
     font-weight: 600;
+    position: relative;
+    overflow: hidden;
 }
 
 .btn-success:hover {
     background-color: var(--success-hover);
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn-success:active {
+    transform: scale(0.97) translateY(0);
+    box-shadow: none;
 }
 
 /* ===== Recurring Cost Cards ===== */
@@ -874,7 +993,8 @@ debt-snowball-panel .tab-panel.active .stat-box:nth-child(4) { animation-delay: 
 
 .cost-card:hover {
     border-color: var(--warning-color) !important;
-    box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.15) !important;
+    box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 0 0 1px rgba(245,158,11,0.15) !important;
+    transform: translateY(-2px);
 }
 
 /* Direct Pay variant — teal/green accent */
@@ -927,7 +1047,8 @@ debt-snowball-panel .tab-panel.active .stat-box:nth-child(4) { animation-delay: 
 
 .income-card:hover {
     border-color: var(--success-color) !important;
-    box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.15) !important;
+    box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 0 0 1px rgba(52,201,122,0.15) !important;
+    transform: translateY(-2px);
 }
 
 /* Compact income card layout */
@@ -993,6 +1114,11 @@ debt-snowball-panel .tab-panel.active .stat-box:nth-child(4) { animation-delay: 
     padding: 1.5rem;
     border: 1px solid var(--border-color);
     margin-bottom: 1.5rem;
+    transition: box-shadow 0.2s ease;
+}
+
+.income-section:hover, .recurring-section:hover, .debts-section:hover {
+    box-shadow: 0 12px 40px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.03);
 }
 
 .income-section {
@@ -1088,27 +1214,31 @@ debt-snowball-panel .tab-panel.active .stat-box:nth-child(4) { animation-delay: 
 }
 
 .cost-subsection-utility .cost-subsection-header {
-    background: rgba(45,212,191,0.1);
+    background: linear-gradient(90deg, rgba(45,212,191,0.12) 0%, rgba(45,212,191,0.04) 100%);
     border-left: 3px solid var(--teal-color);
     color: var(--teal-color);
+    box-shadow: inset 0 1px 0 rgba(45,212,191,0.08);
 }
 
 .cost-subsection-subscription .cost-subsection-header {
-    background: rgba(129,140,248,0.1);
+    background: linear-gradient(90deg, rgba(129,140,248,0.13) 0%, rgba(129,140,248,0.04) 100%);
     border-left: 3px solid #818cf8;
     color: #a5b4fc;
+    box-shadow: inset 0 1px 0 rgba(129,140,248,0.08);
 }
 
 .cost-subsection-other .cost-subsection-header {
-    background: rgba(240,160,80,0.1);
+    background: linear-gradient(90deg, rgba(240,160,80,0.12) 0%, rgba(240,160,80,0.04) 100%);
     border-left: 3px solid var(--warning-color);
     color: var(--warning-color);
+    box-shadow: inset 0 1px 0 rgba(240,160,80,0.08);
 }
 
 .cost-subsection-onetime .cost-subsection-header {
-    background: rgba(239,68,68,0.08);
+    background: linear-gradient(90deg, rgba(239,68,68,0.1) 0%, rgba(239,68,68,0.03) 100%);
     border-left: 3px solid #f87171;
     color: #f87171;
+    box-shadow: inset 0 1px 0 rgba(239,68,68,0.06);
 }
 
 /* ===== Interval Cost Styles ===== */
@@ -1127,8 +1257,14 @@ debt-snowball-panel .tab-panel.active .stat-box:nth-child(4) { animation-delay: 
 }
 
 .cost-card.not-due-month {
-    opacity: 0.45;
-    filter: grayscale(0.3);
+    opacity: 0.42;
+    filter: grayscale(0.35) brightness(0.85);
+    transition: opacity 0.2s ease, filter 0.2s ease;
+}
+
+.cost-card.not-due-month:hover {
+    opacity: 0.72;
+    filter: grayscale(0.1) brightness(0.95);
 }
 
 .not-due-badge {
@@ -1148,13 +1284,24 @@ debt-snowball-panel .tab-panel.active .stat-box:nth-child(4) { animation-delay: 
 .budget-card {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
+    border-left: 3px solid var(--accent-color);
     border-radius: var(--radius);
     margin-bottom: 0.75rem;
     overflow: hidden;
-    transition: border-color 0.2s;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease;
+    animation: cardReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) backwards 0s;
+}
+.budget-card:hover {
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(91,127,255,0.15);
+    transform: translateY(-1px);
 }
 .budget-card.budget-over {
-    border-color: rgba(239,68,68,0.4);
+    border-left-color: var(--danger-color);
+    border-color: rgba(239,68,68,0.35);
+    animation: pulseGlow 2.5s ease-in-out infinite;
+}
+.budget-card.budget-over:hover {
+    box-shadow: 0 8px 24px rgba(244,88,122,0.2), 0 0 0 1px rgba(244,88,122,0.25);
 }
 .budget-card-header {
     display: flex;
@@ -1164,9 +1311,13 @@ debt-snowball-panel .tab-panel.active .stat-box:nth-child(4) { animation-delay: 
     cursor: pointer;
     user-select: none;
     gap: 0.75rem;
+    transition: background 0.15s ease;
 }
 .budget-card-header:hover {
-    background: rgba(255,255,255,0.03);
+    background: rgba(255,255,255,0.04);
+}
+.budget-card-header:active {
+    background: rgba(255,255,255,0.07);
 }
 .budget-header-left {
     display: flex;
@@ -1179,6 +1330,11 @@ debt-snowball-panel .tab-panel.active .stat-box:nth-child(4) { animation-delay: 
     font-size: 0.6rem;
     color: var(--text-secondary);
     flex-shrink: 0;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.budget-card[data-expanded="true"] .budget-toggle-icon {
+    transform: rotate(90deg);
 }
 .budget-name {
     font-weight: 600;
@@ -1217,23 +1373,31 @@ debt-snowball-panel .tab-panel.active .stat-box:nth-child(4) { animation-delay: 
     white-space: nowrap;
 }
 .budget-over-label {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: var(--danger-color);
-    font-weight: 600;
+    font-weight: 700;
     white-space: nowrap;
+    background: rgba(244,88,122,0.1);
+    border: 1px solid rgba(244,88,122,0.25);
+    border-radius: 999px;
+    padding: 0.1rem 0.55rem;
 }
 .budget-progress-track {
-    height: 4px;
+    height: 5px;
     background: rgba(255,255,255,0.07);
+    border-radius: 0 0 3px 3px;
 }
 .budget-progress-fill {
     height: 100%;
-    transition: width 0.3s ease;
+    border-radius: 3px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     min-width: 0;
+    animation: progressFill 0.8s cubic-bezier(0.4, 0, 0.2, 1) backwards;
 }
 .budget-expenses-panel {
     border-top: 1px solid var(--border-color);
     padding: 0.75rem 1rem 1rem;
+    animation: fadeIn 0.25s ease;
 }
 .budget-empty-text {
     font-size: 0.85rem;
@@ -1248,9 +1412,119 @@ debt-snowball-panel .tab-panel.active .stat-box:nth-child(4) { animation-delay: 
     padding: 0.4rem 0;
     border-bottom: 1px solid rgba(255,255,255,0.04);
     font-size: 0.88rem;
+    transition: background 0.15s ease;
+    border-radius: 4px;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+}
+.budget-expense-row:hover {
+    background: rgba(255,255,255,0.03);
 }
 .budget-expense-row:last-of-type {
     border-bottom: none;
+}
+.budget-expense-row.expense-removing {
+    animation: expenseFadeOut 0.3s ease forwards;
+    overflow: hidden;
+}
+
+/* ===== Inline Expense Form ===== */
+.inline-expense-form {
+    background: rgba(91, 127, 255, 0.06);
+    border: 1px solid rgba(91, 127, 255, 0.2);
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    margin-top: 0.75rem;
+    animation: inlineFormIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.inline-expense-form-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.inline-expense-form .inline-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    flex: 1;
+    min-width: 80px;
+}
+
+.inline-expense-form .inline-field.field-desc {
+    flex: 2;
+    min-width: 120px;
+}
+
+.inline-expense-form .inline-field label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+}
+
+.inline-expense-form input {
+    padding: 0.45rem 0.65rem;
+    font-size: 0.875rem;
+    background: rgba(7,6,26,0.7);
+    border: 1px solid var(--border-bright);
+    border-radius: 7px;
+    color: var(--text-primary);
+    font-family: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    width: 100%;
+}
+
+.inline-expense-form input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(91,127,255,0.15);
+}
+
+.inline-expense-form-actions {
+    display: flex;
+    gap: 0.4rem;
+    align-items: flex-end;
+    flex-shrink: 0;
+    padding-bottom: 0;
+}
+
+.btn-inline-save {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 7px;
+    padding: 0.5rem 0.85rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s, transform 0.1s;
+    white-space: nowrap;
+}
+.btn-inline-save:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+}
+.btn-inline-save:active { transform: scale(0.96); }
+
+.btn-inline-cancel {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 7px;
+    padding: 0.5rem 0.65rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s, color 0.15s;
+}
+.btn-inline-cancel:hover {
+    background: rgba(255,255,255,0.06);
+    color: var(--text-primary);
 }
 .expense-description {
     flex: 1;
@@ -1320,6 +1594,81 @@ debt-snowball-panel .tab-panel.active .stat-box:nth-child(4) { animation-delay: 
 }
 .budget-total-over { color: var(--danger-color); }
 .budget-total-ok   { color: var(--text-secondary); }
+
+/* ===== Spending Budgets Section Container ===== */
+.spending-budgets-section {
+    background-color: var(--card-bg);
+    background-image: linear-gradient(145deg, var(--card-bg-2), var(--card-bg));
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--accent-color);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 24px rgba(91,127,255,0.06) inset;
+    transition: box-shadow 0.2s ease;
+}
+
+.spending-budgets-section:hover {
+    box-shadow: 0 12px 40px rgba(0,0,0,0.35), 0 0 24px rgba(91,127,255,0.08) inset;
+}
+
+/* ===== Budget Section Meta Bar ===== */
+.budget-meta-bar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 0.6rem 1rem;
+    background: rgba(91,127,255,0.06);
+    border: 1px solid rgba(91,127,255,0.15);
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    animation: fadeIn 0.35s ease;
+}
+
+.budget-meta-month {
+    font-weight: 700;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--accent-color);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.budget-meta-total {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-left: auto;
+    font-weight: 600;
+}
+
+.budget-meta-budgeted {
+    color: var(--text-secondary);
+}
+
+.budget-meta-spent {
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+.budget-meta-over {
+    color: var(--danger-color);
+}
+
+.budget-meta-ok {
+    color: var(--success-color);
+}
+
+.budget-meta-divider {
+    width: 1px;
+    height: 16px;
+    background: var(--border-color);
+    flex-shrink: 0;
+}
 
 /* ===== Archive Modal ===== */
 .archive-modal-content {
@@ -2253,11 +2602,18 @@ debt-snowball-panel .tab-panel.active .stat-box:nth-child(4) { animation-delay: 
     border: 1px solid rgba(16,185,129,0.3);
     color: var(--success-color);
     font-weight: 600;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s, box-shadow 0.2s;
 }
 
 .btn-mark-paid-action:hover {
     background: rgba(16,185,129,0.2);
     border-color: var(--success-color);
+    box-shadow: 0 0 0 3px rgba(52,201,122,0.12);
+}
+
+.btn-mark-paid-action:active {
+    transform: scale(0.97);
+    animation: paidPulse 0.4s ease;
 }
 
 .btn-autopay-confirm {
@@ -3027,7 +3383,7 @@ const PANEL_HTML = `<div class="app-container">
                         </div>
                         <button id="add-budget-btn" class="btn btn-primary">+ Add Budget</button>
                     </div>
-                    <div id="budgets-list"></div>
+                    <div id="budgets-list" style="margin-top: 0.25rem;"></div>
                 </section>
             </div>
 
@@ -3530,6 +3886,7 @@ let paidStatus = {};       // { [id: 'paid' | 'autopay' } — resets each calend
 let monthlyArchives = [];  // [{ month, label, incomeEntries, recurringCosts, checkpoints, startingBalance, totalIncome, totalCosts }]
 let spendingBudgets = [];  // [{ id, name, amount, exception: {month,amount}|null, expenses: [{id,description,amount,date}] }]
 let expandedBudgets = new Set(); // UI state: which budget IDs are expanded
+let inlineExpenseBudget = null;  // UI state: which budget ID has the inline add-expense form open
 let paydownChart = null;
 let lastSimPayoffDate = null; // used for countdown ticker
 let countdownInterval = null;
@@ -3958,6 +4315,25 @@ function showModal(modal) {
 
 // ─── Event Listeners ─────────────────────────────────────────────────────────
 function setupEventListeners() {
+
+    // ── Global ripple effect on all .btn clicks ───────────────────────────────
+    _root.addEventListener('click', e => {
+        const btn = e.target.closest('.btn');
+        if (!btn || btn.disabled) return;
+        const ripple = document.createElement('span');
+        ripple.className = 'btn-ripple';
+        const rect = btn.getBoundingClientRect();
+        const size = Math.max(rect.width, rect.height);
+        ripple.style.cssText = `
+            left: ${e.clientX - rect.left - size/2}px;
+            top:  ${e.clientY - rect.top  - size/2}px;
+            width: ${size}px;
+            height: ${size}px;
+        `;
+        btn.appendChild(ripple);
+        ripple.addEventListener('animationend', () => ripple.remove());
+    }, true);
+
     addDebtBtn.addEventListener('click',   () => openDebtModal());
     addCostBtn.addEventListener('click',   () => openCostModal());
     addIncomeBtn.addEventListener('click', () => openIncomeModal());
@@ -3980,19 +4356,74 @@ function setupEventListeners() {
         const toggle = e.target.closest('[data-toggle-budget]');
         if (toggle) {
             const bid = toggle.dataset.toggleBudget;
-            if (expandedBudgets.has(bid)) expandedBudgets.delete(bid);
-            else expandedBudgets.add(bid);
+            if (expandedBudgets.has(bid)) {
+                expandedBudgets.delete(bid);
+                // Close inline form too when collapsing
+                if (inlineExpenseBudget === bid) inlineExpenseBudget = null;
+            } else {
+                expandedBudgets.add(bid);
+            }
             renderSpendingBudgets();
             return;
         }
-        const addExp = e.target.closest('.btn-add-expense');
-        if (addExp) { openExpenseModal(addExp.dataset.budgetId); return; }
 
+        // Inline expense toggle (open/close inline form)
+        const inlineToggle = e.target.closest('.btn-toggle-inline-expense');
+        if (inlineToggle) {
+            const bid = inlineToggle.dataset.budgetId;
+            inlineExpenseBudget = (inlineExpenseBudget === bid) ? null : bid;
+            expandedBudgets.add(bid); // Ensure card is expanded
+            renderSpendingBudgets();
+            return;
+        }
+
+        // Inline save button
+        const inlineSave = e.target.closest('.btn-inline-save');
+        if (inlineSave) {
+            const bid = inlineSave.dataset.budgetId;
+            const form = inlineSave.closest('.inline-expense-form');
+            if (!form) return;
+            const desc   = form.querySelector('.inline-desc').value.trim();
+            const amount = parseFloat(form.querySelector('.inline-amount').value);
+            const date   = form.querySelector('.inline-date').value;
+            if (!desc)              { showErrorToast('Please enter a description.'); return; }
+            if (isNaN(amount) || amount < 0) { showErrorToast('Please enter a valid amount.'); return; }
+            const budget = spendingBudgets.find(b => b.id === bid);
+            if (!budget) return;
+            if (!budget.expenses) budget.expenses = [];
+            budget.expenses.push({ id: Date.now().toString(), description: desc, amount, date });
+            inlineExpenseBudget = null;
+            expandedBudgets.add(bid);
+            saveData().catch(err => console.error('Debt Snowball: save failed —', err));
+            renderSpendingBudgets();
+            showSavedToast('Expense added ✓');
+            return;
+        }
+
+        // Inline cancel button
+        const inlineCancel = e.target.closest('.btn-inline-cancel');
+        if (inlineCancel) {
+            inlineExpenseBudget = null;
+            renderSpendingBudgets();
+            return;
+        }
+
+        // Edit expense (opens modal for editing)
         const editExp = e.target.closest('.btn-edit-expense');
         if (editExp) { openExpenseModal(editExp.dataset.budgetId, editExp.dataset.expenseId); return; }
 
         const delExp = e.target.closest('.btn-delete-expense');
-        if (delExp) { deleteExpense(delExp.dataset.budgetId, delExp.dataset.expenseId); return; }
+        if (delExp) {
+            // Animate the row out before removing
+            const row = delExp.closest('.budget-expense-row');
+            if (row) {
+                row.classList.add('expense-removing');
+                setTimeout(() => deleteExpense(delExp.dataset.budgetId, delExp.dataset.expenseId), 280);
+            } else {
+                deleteExpense(delExp.dataset.budgetId, delExp.dataset.expenseId);
+            }
+            return;
+        }
 
         const override = e.target.closest('.btn-override-budget');
         if (override) { openBudgetModal(override.dataset.budgetId, true); return; }
@@ -4003,6 +4434,21 @@ function setupEventListeners() {
         const delBudget = e.target.closest('.btn-delete-budget');
         if (delBudget) { deleteBudget(delBudget.dataset.budgetId); return; }
     });
+
+    // Inline expense form — keyboard handling
+    _root.getElementById('budgets-list').addEventListener('keydown', e => {
+        const form = e.target.closest('.inline-expense-form');
+        if (!form) return;
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const saveBtn = form.querySelector('.btn-inline-save');
+            if (saveBtn) saveBtn.click();
+        } else if (e.key === 'Escape') {
+            const cancelBtn = form.querySelector('.btn-inline-cancel');
+            if (cancelBtn) cancelBtn.click();
+        }
+    });
+
     _root.getElementById('add-checkpoint-btn').addEventListener('click', () => openCheckpointModal());
     _root.getElementById('update-plan-btn').addEventListener('click',    () => renderUI());
 
@@ -4503,11 +4949,39 @@ function renderSpendingBudgets() {
     if (!container) return;
 
     if (spendingBudgets.length === 0) {
-        container.innerHTML = `<p class="empty-state-text" style="color:var(--text-secondary);font-size:0.9rem;font-style:italic;padding:0.5rem 0;">No spending budgets yet. Click <strong>+ Add Budget</strong> to get started.</p>`;
+        container.innerHTML = `
+            <div class="empty-state">
+                No spending budgets yet.<br>Track discretionary spending by setting a monthly limit for each category.
+                <br><button class="empty-cta-btn" id="empty-add-budget-btn">+ Add Your First Budget</button>
+            </div>`;
+        const emptyBtn = container.querySelector('#empty-add-budget-btn');
+        if (emptyBtn) emptyBtn.addEventListener('click', () => openBudgetModal());
         return;
     }
 
-    container.innerHTML = spendingBudgets.map(budget => {
+    // Budget meta bar — current month + totals across all budgets
+    const now = new Date();
+    const monthName = now.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+    const totalBudgeted = spendingBudgets.reduce((s, b) => s + getBudgetAmount(b), 0);
+    const totalSpent    = spendingBudgets.reduce((s, b) => s + (b.expenses || []).reduce((x, e) => x + e.amount, 0), 0);
+    const totalOver     = totalSpent - totalBudgeted;
+    const metaSpentClass = totalOver > 0 ? 'budget-meta-over' : 'budget-meta-ok';
+
+    const metaBar = `
+        <div class="budget-meta-bar">
+            <span class="budget-meta-month">📅 ${monthName}</span>
+            <div class="budget-meta-divider"></div>
+            <span class="budget-meta-budgeted">${spendingBudgets.length} budget${spendingBudgets.length !== 1 ? 's' : ''} · ${formatMoney(totalBudgeted)} total limit</span>
+            <span class="budget-meta-total">
+                <span class="budget-meta-budgeted">Spent:</span>
+                <span class="${metaSpentClass}">${formatMoney(totalSpent)}</span>
+                ${totalOver > 0
+                    ? `<span class="budget-meta-over" style="font-size:0.75rem;">⚠ ${formatMoney(totalOver)} over</span>`
+                    : `<span class="budget-meta-ok" style="font-size:0.75rem;">${formatMoney(totalBudgeted - totalSpent)} left</span>`}
+            </span>
+        </div>`;
+
+    const cards = spendingBudgets.map((budget, cardIdx) => {
         const budgetAmt  = getBudgetAmount(budget);
         const expenses   = budget.expenses || [];
         const spent      = expenses.reduce((s, e) => s + e.amount, 0);
@@ -4515,17 +4989,29 @@ function renderSpendingBudgets() {
         const isOver     = over > 0;
         const rawPct     = budgetAmt > 0 ? (spent / budgetAmt) * 100 : (spent > 0 ? 100 : 0);
         const barPct     = Math.min(rawPct, 100);
-        const fillColor  = isOver ? 'var(--danger-color)' : rawPct < 70 ? 'var(--success-color)' : rawPct < 90 ? 'var(--warning-color)' : 'var(--danger-color)';
         const isExpanded = expandedBudgets.has(budget.id);
+        const showInline = inlineExpenseBudget === budget.id;
         const hasExc     = budget.exception?.month === currentMonthKey();
+
+        // Gradient fill for premium look
+        let fillGradient;
+        if (isOver) {
+            fillGradient = 'linear-gradient(90deg, var(--danger-color), #f87171)';
+        } else if (rawPct < 70) {
+            fillGradient = 'linear-gradient(90deg, var(--success-color), #34d399)';
+        } else if (rawPct < 90) {
+            fillGradient = 'linear-gradient(90deg, var(--warning-color), #fbbf24)';
+        } else {
+            fillGradient = 'linear-gradient(90deg, #f87171, var(--danger-color))';
+        }
 
         const expenseRows = expenses.length === 0
             ? `<p class="budget-empty-text">No expenses logged yet.</p>`
             : [...expenses].sort((a, b) => (b.date || '') > (a.date || '') ? 1 : -1).map(exp => `
-                <div class="budget-expense-row">
-                    <span class="expense-description">${exp.description}</span>
+                <div class="budget-expense-row" data-expense-id="${exp.id}">
+                    <span class="expense-description">${escHtml(exp.description)}</span>
                     <span class="expense-date">${exp.date ? new Date(exp.date + 'T00:00:00').toLocaleDateString(undefined, {month:'short', day:'numeric'}) : ''}</span>
-                    <span class="expense-amount">$${exp.amount.toFixed(2)}</span>
+                    <span class="expense-amount" style="color:var(--expense-color);">−${formatMoney(exp.amount)}</span>
                     <div class="expense-actions">
                         <button class="btn-icon btn-edit-expense" data-budget-id="${budget.id}" data-expense-id="${exp.id}" title="Edit">✎</button>
                         <button class="btn-icon btn-delete-expense" data-budget-id="${budget.id}" data-expense-id="${exp.id}" title="Delete">✕</button>
@@ -4534,34 +5020,64 @@ function renderSpendingBudgets() {
 
         const totalRow = expenses.length > 0 ? `
             <div class="budget-total-row ${isOver ? 'budget-total-over' : 'budget-total-ok'}">
-                <span>Total: $${spent.toFixed(2)} / $${budgetAmt.toFixed(2)}</span>
-                ${isOver ? `<span style="color:var(--danger-color);">⚠ Over by $${over.toFixed(2)}</span>` : `<span style="color:var(--success-color);">$${(budgetAmt - spent).toFixed(2)} remaining</span>`}
+                <span>${formatMoney(spent)} / ${formatMoney(budgetAmt)}</span>
+                ${isOver
+                    ? `<span style="color:var(--danger-color); font-weight:700;">⚠ Over by ${formatMoney(over)}</span>`
+                    : `<span style="color:var(--success-color);">${formatMoney(budgetAmt - spent)} remaining</span>`}
             </div>` : '';
 
+        // Inline add-expense form (shown instead of modal for new expenses)
+        const inlineForm = showInline ? `
+            <div class="inline-expense-form">
+                <div class="inline-expense-form-row">
+                    <div class="inline-field field-desc">
+                        <label>Description</label>
+                        <input type="text" class="inline-desc" placeholder="e.g. Walmart run" autocomplete="off">
+                    </div>
+                    <div class="inline-field">
+                        <label>Amount ($)</label>
+                        <input type="number" class="inline-amount" min="0" step="0.01" placeholder="0.00">
+                    </div>
+                    <div class="inline-field">
+                        <label>Date</label>
+                        <input type="date" class="inline-date" value="${new Date().toISOString().slice(0,10)}">
+                    </div>
+                    <div class="inline-expense-form-actions">
+                        <button class="btn-inline-save" data-budget-id="${budget.id}">Save</button>
+                        <button class="btn-inline-cancel" data-budget-id="${budget.id}">✕</button>
+                    </div>
+                </div>
+            </div>` : '';
+
+        const addExpBtn = showInline
+            ? `<button class="btn btn-secondary btn-sm btn-toggle-inline-expense" data-budget-id="${budget.id}" style="border-color:rgba(91,127,255,0.4);color:var(--accent-color);">✕ Cancel</button>`
+            : `<button class="btn btn-secondary btn-sm btn-toggle-inline-expense" data-budget-id="${budget.id}">+ Add Expense</button>`;
+
         return `
-        <div class="budget-card ${isOver ? 'budget-over' : ''}" data-budget-id="${budget.id}">
+        <div class="budget-card ${isOver ? 'budget-over' : ''}" data-budget-id="${budget.id}" data-expanded="${isExpanded}" style="animation-delay:${cardIdx * 0.06}s;">
             <div class="budget-card-header" data-toggle-budget="${budget.id}">
                 <div class="budget-header-left">
-                    <span class="budget-toggle-icon">${isExpanded ? '▼' : '▶'}</span>
-                    <span class="budget-name">${budget.name}</span>
-                    ${hasExc ? `<span class="budget-exception-badge">Override: $${budgetAmt.toFixed(2)}</span>` : ''}
+                    <span class="budget-toggle-icon">▶</span>
+                    <span class="budget-name">${escHtml(budget.name)}</span>
+                    ${hasExc ? `<span class="budget-exception-badge">Override: ${formatMoney(budgetAmt)}</span>` : ''}
                 </div>
                 <div class="budget-header-right">
                     ${isOver
-                        ? `<span class="budget-over-label">⚠ Over by $${over.toFixed(2)}</span>`
-                        : `<span class="budget-remaining">$${(budgetAmt - spent).toFixed(2)} left</span>`}
-                    <span class="budget-spent-of">$${spent.toFixed(2)} / $${budgetAmt.toFixed(2)}</span>
+                        ? `<span class="budget-over-label">⚠ Over ${formatMoney(over)}</span>`
+                        : `<span class="budget-remaining">${formatMoney(budgetAmt - spent)} left</span>`}
+                    <span class="budget-spent-of">${formatMoney(spent)} / ${formatMoney(budgetAmt)}</span>
                 </div>
             </div>
             <div class="budget-progress-track">
-                <div class="budget-progress-fill" style="width:${barPct}%; background:${fillColor};"></div>
+                <div class="budget-progress-fill" style="width:${barPct}%; background:${fillGradient};"></div>
             </div>
             ${isExpanded ? `
             <div class="budget-expenses-panel">
                 ${expenseRows}
                 ${totalRow}
+                ${inlineForm}
                 <div class="budget-card-actions">
-                    <button class="btn btn-secondary btn-sm btn-add-expense" data-budget-id="${budget.id}">+ Add Expense</button>
+                    ${addExpBtn}
                     <button class="btn btn-secondary btn-sm btn-override-budget" data-budget-id="${budget.id}">${hasExc ? '✎ Edit Override' : '⚡ Override Month'}</button>
                     <button class="btn btn-secondary btn-sm btn-edit-budget" data-budget-id="${budget.id}">✎ Edit</button>
                     <button class="btn btn-secondary btn-sm btn-delete-budget" data-budget-id="${budget.id}" style="margin-left:auto; border-color:var(--danger-color); color:var(--danger-color);">🗑 Delete</button>
@@ -4569,6 +5085,14 @@ function renderSpendingBudgets() {
             </div>` : ''}
         </div>`;
     }).join('');
+
+    container.innerHTML = metaBar + cards;
+
+    // Auto-focus the inline form description field if open
+    if (inlineExpenseBudget) {
+        const descInput = container.querySelector('.inline-expense-form .inline-desc');
+        if (descInput) setTimeout(() => descInput.focus(), 50);
+    }
 }
 
 // ─── Budget Modal ─────────────────────────────────────────────────────────────
@@ -4783,6 +5307,18 @@ function togglePaid(id, autoPay) {
         if (wasUnpaid && debts.find(d => d.id === id)) {
             launchConfetti();
         }
+    }
+    // Micro-animation on the card being toggled
+    const card = _root.querySelector(`.debt-card[data-cost-id="${id}"], .debt-card .btn-mark-paid-action[data-id="${id}"]`)
+        ?.closest('.debt-card');
+    if (card) {
+        card.style.transition = 'transform 0.15s ease, opacity 0.15s ease';
+        card.style.transform  = 'scale(0.99)';
+        card.style.opacity    = '0.8';
+        setTimeout(() => {
+            card.style.transform = '';
+            card.style.opacity   = '';
+        }, 160);
     }
     saveData().catch(err => console.error('Debt Snowball: save failed —', err));
 }
@@ -5070,9 +5606,15 @@ function renderIncomeList() {
     const summaryEl = _root.getElementById('income-summary');
 
     if (incomeEntries.length === 0) {
-        incomeListContainer.innerHTML = '<div class="empty-state">No income entries yet. Click "+ Add Income" to add your paychecks and other income for this month.</div>';
+        incomeListContainer.innerHTML = `
+            <div class="empty-state">
+                No income entries yet.<br>Add your paychecks and other income for this month.
+                <br><button class="empty-cta-btn" id="empty-add-income-btn">+ Add Income</button>
+            </div>`;
         incomeListContainer.style.display = 'block';
         summaryEl.style.display = 'none';
+        const emptyBtn = incomeListContainer.querySelector('#empty-add-income-btn');
+        if (emptyBtn) emptyBtn.addEventListener('click', () => openIncomeModal());
         return;
     }
 
@@ -5121,8 +5663,14 @@ function renderRecurringCostsList() {
     }
 
     if (recurringCosts.length === 0) {
-        costsListContainer.innerHTML = '<div class="empty-state">No recurring costs added yet. Click "+ Add Cost" to get started.</div>';
+        costsListContainer.innerHTML = `
+            <div class="empty-state">
+                No recurring costs yet.<br>Add your bills, subscriptions, and utilities.
+                <br><button class="empty-cta-btn" id="empty-add-cost-btn">+ Add Recurring Cost</button>
+            </div>`;
         costsListContainer.style.display = 'block';
+        const emptyBtn = costsListContainer.querySelector('#empty-add-cost-btn');
+        if (emptyBtn) emptyBtn.addEventListener('click', () => openCostModal());
         return;
     }
 
@@ -5222,8 +5770,14 @@ function renderDebtsList(simResults) {
 
     if (debts.length === 0) {
         if (debtsSummaryEl) debtsSummaryEl.textContent = 'Total Debt: $0.00';
-        debtsListContainer.innerHTML = '<div class="empty-state">No debts added yet. Click "+ Add Debt" to get started.</div>';
+        debtsListContainer.innerHTML = `
+            <div class="empty-state">
+                No debts added yet.<br>Add your credit cards, loans, and other debts to start your payoff plan.
+                <br><button class="empty-cta-btn" id="empty-add-debt-btn">+ Add Debt</button>
+            </div>`;
         debtsListContainer.style.display = 'block';
+        const emptyBtn = debtsListContainer.querySelector('#empty-add-debt-btn');
+        if (emptyBtn) emptyBtn.addEventListener('click', () => openDebtModal());
         return;
     }
 
