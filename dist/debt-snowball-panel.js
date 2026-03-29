@@ -3602,7 +3602,7 @@ function setupEventListeners() {
             strategy = btn.dataset.strategy;
             _root.querySelectorAll('.strategy-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            saveData().catch(err => console.error("Debt Snowball: save failed —", err));
+            saveData().then(() => renderUI()).catch(err => console.error("Debt Snowball: save failed —", err));
         });
     });
 
@@ -4553,7 +4553,8 @@ function renderDebtsList(simResults) {
         debtElt.innerHTML = `
             ${paidOverlay}
             <div class="debt-order-badge" title="${strategy === 'snowball' ? 'Payoff order: smallest balance first' : 'Payoff order: highest interest first'}">${idx + 1}</div>
-            <div class="debt-name">${escHtml(debt.name)} ${typeBadge} ${promoBadge} ${autoBadge}</div>
+            <div class="debt-name">${escHtml(debt.name)}</div>
+            <div style="display:flex; flex-wrap:wrap; gap:0.35rem; margin-bottom:0.35rem;">${typeBadge}${promoBadge}${autoBadge}</div>
             ${targetBadge}
             <div class="debt-detail"><span class="debt-detail-label">Balance</span><span class="debt-detail-value">${formatMoney(debt.balance)}</span></div>
             <div class="debt-detail"><span class="debt-detail-label">Interest Rate</span><span class="debt-detail-value">${rateDisplay}</span></div>
