@@ -1062,6 +1062,121 @@ debt-snowball-panel .tab-panel.active .stat-box:nth-child(4) { animation-delay: 
     color: var(--warning-color);
 }
 
+.cost-subsection-onetime .cost-subsection-header {
+    background: rgba(239,68,68,0.08);
+    border-left: 3px solid #f87171;
+    color: #f87171;
+}
+
+/* ===== Interval Cost Styles ===== */
+.interval-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.18rem 0.45rem;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    background: rgba(148,163,184,0.12);
+    color: #94a3b8;
+    border: 1px solid rgba(148,163,184,0.2);
+    margin-left: 0.3rem;
+}
+
+.cost-card.not-due-month {
+    opacity: 0.45;
+    filter: grayscale(0.3);
+}
+
+.not-due-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.18rem 0.45rem;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    background: rgba(100,116,139,0.1);
+    color: #64748b;
+    border: 1px dashed rgba(100,116,139,0.3);
+    margin-left: 0.3rem;
+}
+
+/* ===== Archive Modal ===== */
+.archive-modal-content {
+    max-width: 560px;
+}
+
+.archive-select {
+    width: 100%;
+    margin-bottom: 1.25rem;
+}
+
+.archive-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.archive-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.65rem 1rem;
+    background: rgba(255,255,255,0.03);
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-color);
+    font-size: 0.875rem;
+}
+
+.archive-summary-label {
+    color: var(--text-secondary);
+}
+
+.archive-summary-value {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.archive-summary-value.income  { color: var(--success-color); }
+.archive-summary-value.expense { color: var(--expense-color, #f87171); }
+
+.archive-detail-toggle {
+    cursor: pointer;
+    color: var(--accent-color);
+    font-size: 0.8rem;
+    background: none;
+    border: none;
+    padding: 0.25rem 0;
+    text-decoration: underline;
+}
+
+.archive-detail-section {
+    margin-top: 0.5rem;
+    display: none;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.archive-detail-section.open {
+    display: flex;
+}
+
+.archive-detail-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+    color: var(--text-secondary);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.archive-empty {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    padding: 2rem 1rem;
+}
+
 .income-badge {
     background: rgba(16, 185, 129, 0.15);
     color: #34d399;
@@ -2541,6 +2656,7 @@ const PANEL_HTML = `<div class="app-container">
         <header class="header">
             <h1>Debt Snowball Tracker</h1>
             <div class="header-actions">
+                <button id="history-btn" class="btn btn-secondary" style="background: rgba(168,85,247,0.15); border-color: rgba(168,85,247,0.4); color: #c084fc;">📅 History</button>
                 <label for="import-file" class="btn btn-secondary" style="background: rgba(59,130,246,0.15); border-color: rgba(59,130,246,0.4); color: #60a5fa;">
                     Import Data
                     <input type="file" id="import-file" accept=".json" style="display: none;">
@@ -2632,8 +2748,8 @@ const PANEL_HTML = `<div class="app-container">
                 <section class="recurring-section">
                     <div class="section-header">
                         <div>
-                            <h2>Recurring Costs</h2>
-                            <p class="subtitle" style="margin-bottom:0;">Fixed monthly bills grouped by category. <strong>Direct</strong> reduces your cash budget; <strong>Card</strong> does not.</p>
+                            <h2>Monthly Costs</h2>
+                            <p class="subtitle" style="margin-bottom:0;">Bills grouped by category. <strong>One-Time</strong> costs are cleared at month end. <strong>Direct</strong> reduces your cash budget; <strong>Card</strong> does not.</p>
                             <p id="recurring-summary" class="subtitle" style="margin-top:0.35rem; color: var(--text-secondary); font-size: 0.95rem;"></p>
                         </div>
                         <button id="add-cost-btn" class="btn btn-warning">+ Add Cost</button>
@@ -2827,22 +2943,38 @@ const PANEL_HTML = `<div class="app-container">
                     <select id="cost-category">
                         <option value="utility">Utility</option>
                         <option value="subscription">Subscription</option>
-                        <option value="other">Other</option>
+                        <option value="other">Other (Recurring)</option>
+                        <option value="one-time">One-Time (This Month Only)</option>
                     </select>
                 </div>
                 <div class="input-group">
                     <label for="cost-name">Name</label>
                     <input type="text" id="cost-name" required placeholder="e.g. Electric Bill">
                 </div>
+                <div class="input-group" id="cost-interval-group">
+                    <label for="cost-interval">Recurrence</label>
+                    <select id="cost-interval">
+                        <option value="1">Monthly</option>
+                        <option value="2">Every 2 Months</option>
+                        <option value="3">Quarterly (Every 3 Months)</option>
+                        <option value="6">Semi-Annual (Every 6 Months)</option>
+                        <option value="12">Annual (Every 12 Months)</option>
+                        <option value="custom">Custom Interval...</option>
+                    </select>
+                </div>
+                <div class="input-group" id="cost-interval-custom-group" style="display:none;">
+                    <label for="cost-interval-custom">Every X Months</label>
+                    <input type="number" id="cost-interval-custom" min="2" max="60" step="1" placeholder="e.g. 4">
+                </div>
                 <div class="input-group">
-                    <label for="cost-amount">Monthly Amount ($)</label>
+                    <label for="cost-amount">Amount ($)</label>
                     <input type="number" id="cost-amount" min="0" step="0.01" required placeholder="e.g. 120">
                 </div>
                 <div class="input-group">
                     <label for="cost-amount-type">Amount Type</label>
                     <select id="cost-amount-type" required>
-                        <option value="fixed">Fixed — same every month</option>
-                        <option value="flexible">Flexible — varies month to month</option>
+                        <option value="fixed">Fixed</option>
+                        <option value="flexible">Flexible — varies each occurrence</option>
                     </select>
                 </div>
                 <div class="input-group">
@@ -2956,6 +3088,18 @@ const PANEL_HTML = `<div class="app-container">
         </div>
     </div>
 
+    <div id="archive-modal" class="modal">
+        <div class="modal-content archive-modal-content">
+            <div class="modal-header">
+                <h3>📅 Monthly History</h3>
+                <button class="close-modal" id="close-archive-modal">&times;</button>
+            </div>
+            <div id="archive-body">
+                <div class="archive-empty">No archived months yet.<br>History is saved automatically when each month rolls over.</div>
+            </div>
+        </div>
+    </div>
+
     <canvas id="confetti-canvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;display:none;"></canvas>`;
 
 class DebtSnowballPanel extends HTMLElement {
@@ -3036,6 +3180,7 @@ let checkpoints = [];
 let startingBalance = 0;
 let strategy = 'snowball'; // 'snowball' | 'avalanche'
 let paidStatus = {};       // { [id: 'paid' | 'autopay' } — resets each calendar month
+let monthlyArchives = [];  // [{ month, label, incomeEntries, recurringCosts, checkpoints, startingBalance, totalIncome, totalCosts }]
 let paydownChart = null;
 let lastSimPayoffDate = null; // used for countdown ticker
 let countdownInterval = null;
@@ -3124,9 +3269,45 @@ async function loadBackendData() {
             checkpoints     = result.checkpoints     || [];
             strategy        = result.strategy        || 'snowball';
             startingBalance = result.startingBalance || 0;
+            monthlyArchives = result.monthlyArchives || [];
 
-            // Shared paid status — auto-reset when the month rolls over
-            if (result.paidMonth === currentMonthKey() && result.paidStatus) {
+            const prevMonth = result.paidMonth;
+            const thisMonth = currentMonthKey();
+
+            if (prevMonth && prevMonth !== thisMonth) {
+                // Archive the closing month before clearing
+                const archive = {
+                    month:          prevMonth,
+                    label:          formatMonthLabel(prevMonth),
+                    incomeEntries:  result.incomeEntries  || [],
+                    recurringCosts: result.recurringCosts || [],
+                    checkpoints:    result.checkpoints    || [],
+                    startingBalance: result.startingBalance || 0,
+                    paidStatus:     result.paidStatus     || {},
+                    totalIncome:    (result.incomeEntries  || []).reduce((s, e) => s + e.amount, 0),
+                    totalCosts:     (result.recurringCosts || []).reduce((s, c) => s + c.amount, 0),
+                };
+                monthlyArchives.unshift(archive);
+                if (monthlyArchives.length > 24) monthlyArchives.pop();
+
+                // Clear month-specific data; prune one-time costs; advance interval nextDueMonth
+                incomeEntries  = [];
+                checkpoints    = [];
+                recurringCosts = recurringCosts
+                    .filter(c => (c.category || 'other') !== 'one-time')
+                    .map(c => {
+                        if ((c.intervalMonths || 1) <= 1) return c;
+                        let next = c.nextDueMonth || prevMonth;
+                        // Advance until next is strictly past the closing month
+                        while (monthKeyToIndex(next) <= monthKeyToIndex(prevMonth)) {
+                            next = addMonthsToKey(next, c.intervalMonths);
+                        }
+                        return { ...c, nextDueMonth: next };
+                    });
+                paidStatus     = {};
+
+                saveData().catch(err => console.error('Debt Snowball: rollover save failed —', err));
+            } else if (prevMonth === thisMonth && result.paidStatus) {
                 paidStatus = result.paidStatus;
             } else {
                 paidStatus = {};
@@ -3169,6 +3350,7 @@ async function saveData() {
             debts, recurringCosts, incomeEntries, checkpoints,
             strategy, startingBalance,
             paidStatus, paidMonth: currentMonthKey(),
+            monthlyArchives,
         },
     });
 }
@@ -3176,6 +3358,163 @@ async function saveData() {
 function currentMonthKey() {
     const d = new Date();
     return `${d.getFullYear()}-${d.getMonth()}`;
+}
+
+function formatMonthLabel(key) {
+    const [year, month] = key.split('-').map(Number);
+    return new Date(year, month).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+}
+
+function monthKeyToIndex(key) {
+    const [y, m] = key.split('-').map(Number);
+    return y * 12 + m;
+}
+
+function addMonthsToKey(key, n) {
+    const total = monthKeyToIndex(key) + n;
+    return `${Math.floor(total / 12)}-${total % 12}`;
+}
+
+function isCostDueThisMonth(cost) {
+    if ((cost.intervalMonths || 1) <= 1) return true;
+    const next = cost.nextDueMonth || currentMonthKey();
+    return monthKeyToIndex(next) <= monthKeyToIndex(currentMonthKey());
+}
+
+function intervalLabel(n) {
+    if (!n || n <= 1) return null;
+    if (n === 3)  return '📆 Quarterly';
+    if (n === 6)  return '📆 Semi-Annual';
+    if (n === 12) return '📆 Annual';
+    return `📆 Every ${n} mo.`;
+}
+
+function updateCostModalIntervalVisibility() {
+    const cat      = _root.getElementById('cost-category').value;
+    const intGrp   = _root.getElementById('cost-interval-group');
+    const custGrp  = _root.getElementById('cost-interval-custom-group');
+    const isOneTime = cat === 'one-time';
+    intGrp.style.display  = isOneTime ? 'none' : '';
+    if (isOneTime) custGrp.style.display = 'none';
+    else {
+        const val = _root.getElementById('cost-interval').value;
+        custGrp.style.display = val === 'custom' ? '' : 'none';
+    }
+}
+
+// ─── Archive Viewer ───────────────────────────────────────────────────────────
+function openArchiveModal() {
+    const body = _root.getElementById('archive-body');
+    body.innerHTML = '';
+
+    if (monthlyArchives.length === 0) {
+        body.innerHTML = '<div class="archive-empty">No archived months yet.<br>History is saved automatically when each month rolls over.</div>';
+        showModal(_root.getElementById('archive-modal'));
+        return;
+    }
+
+    // Dropdown
+    const select = document.createElement('select');
+    select.className = 'input-group archive-select';
+    monthlyArchives.forEach((a, i) => {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = a.label;
+        select.appendChild(opt);
+    });
+    body.appendChild(select);
+
+    const detailWrap = document.createElement('div');
+    body.appendChild(detailWrap);
+
+    function renderArchiveDetail(idx) {
+        const a = monthlyArchives[idx];
+        detailWrap.innerHTML = '';
+
+        const summary = document.createElement('div');
+        summary.className = 'archive-summary';
+
+        const fmt = n => typeof n === 'number' ? formatMoney(n) : '$0.00';
+
+        summary.innerHTML = `
+            <div class="archive-summary-row">
+                <span class="archive-summary-label">Starting Balance</span>
+                <span class="archive-summary-value">${fmt(a.startingBalance)}</span>
+            </div>
+            <div class="archive-summary-row">
+                <span class="archive-summary-label">Total Income</span>
+                <span class="archive-summary-value income">${fmt(a.totalIncome)}</span>
+            </div>
+            <div class="archive-summary-row">
+                <span class="archive-summary-label">Total Costs</span>
+                <span class="archive-summary-value expense">${fmt(a.totalCosts)}</span>
+            </div>`;
+
+        // Income detail toggle
+        if (a.incomeEntries && a.incomeEntries.length > 0) {
+            const incBtn = document.createElement('button');
+            incBtn.className = 'archive-detail-toggle';
+            incBtn.textContent = `▶ Income entries (${a.incomeEntries.length})`;
+            const incDetail = document.createElement('div');
+            incDetail.className = 'archive-detail-section';
+            a.incomeEntries.forEach(e => {
+                const row = document.createElement('div');
+                row.className = 'archive-detail-item';
+                row.innerHTML = `<span>${escHtml(e.label)}</span><span>${fmt(e.amount)}</span>`;
+                incDetail.appendChild(row);
+            });
+            incBtn.addEventListener('click', () => {
+                incDetail.classList.toggle('open');
+                incBtn.textContent = incDetail.classList.contains('open')
+                    ? `▼ Income entries (${a.incomeEntries.length})`
+                    : `▶ Income entries (${a.incomeEntries.length})`;
+            });
+            summary.appendChild(incBtn);
+            summary.appendChild(incDetail);
+        }
+
+        // Costs detail toggle
+        if (a.recurringCosts && a.recurringCosts.length > 0) {
+            const costBtn = document.createElement('button');
+            costBtn.className = 'archive-detail-toggle';
+            costBtn.textContent = `▶ Cost entries (${a.recurringCosts.length})`;
+            const costDetail = document.createElement('div');
+            costDetail.className = 'archive-detail-section';
+            a.recurringCosts.forEach(c => {
+                const row = document.createElement('div');
+                row.className = 'archive-detail-item';
+                row.innerHTML = `<span>${escHtml(c.name)} <span style="opacity:0.6;font-size:0.75em;">${c.category || 'other'}</span></span><span>${fmt(c.amount)}</span>`;
+                costDetail.appendChild(row);
+            });
+            costBtn.addEventListener('click', () => {
+                costDetail.classList.toggle('open');
+                costBtn.textContent = costDetail.classList.contains('open')
+                    ? `▼ Cost entries (${a.recurringCosts.length})`
+                    : `▶ Cost entries (${a.recurringCosts.length})`;
+            });
+            summary.appendChild(costBtn);
+            summary.appendChild(costDetail);
+        }
+
+        detailWrap.appendChild(summary);
+    }
+
+    renderArchiveDetail(0);
+    select.addEventListener('change', () => renderArchiveDetail(Number(select.value)));
+
+    showModal(_root.getElementById('archive-modal'));
+}
+
+function closeArchiveModal() {
+    const modal = _root.getElementById('archive-modal');
+    modal.classList.remove('active');
+    setTimeout(() => { modal.style.display = 'none'; }, 300);
+}
+
+function showModal(modal) {
+    modal.style.display = 'flex';
+    void modal.offsetWidth;
+    modal.classList.add('active');
 }
 
 // ─── Event Listeners ─────────────────────────────────────────────────────────
@@ -3220,6 +3559,13 @@ function setupEventListeners() {
         }
     });
 
+    // Archive / History
+    _root.getElementById('history-btn').addEventListener('click', openArchiveModal);
+    _root.getElementById('close-archive-modal').addEventListener('click', closeArchiveModal);
+    _root.getElementById('archive-modal').addEventListener('click', e => {
+        if (e.target === _root.getElementById('archive-modal')) closeArchiveModal();
+    });
+
     // Windfall planner
     _root.getElementById('windfall-btn').addEventListener('click', openWindfallModal);
     _root.getElementById('close-windfall-modal').addEventListener('click', closeWindfallModal);
@@ -3236,6 +3582,13 @@ function setupEventListeners() {
         localStorage.setItem('snowball_checkin_dismissed', currentMonthKey());
         checkinModal.classList.remove('active');
         setTimeout(() => { checkinModal.style.display = 'none'; }, 300);
+    });
+
+    // Cost modal: show/hide interval fields based on category and interval select
+    _root.getElementById('cost-category').addEventListener('change', updateCostModalIntervalVisibility);
+    _root.getElementById('cost-interval').addEventListener('change', () => {
+        const isCustom = _root.getElementById('cost-interval').value === 'custom';
+        _root.getElementById('cost-interval-custom-group').style.display = isCustom ? '' : 'none';
     });
 
     // Auto min-payment calc
@@ -3462,23 +3815,34 @@ function openCostModal(costId = null) {
     _root.getElementById('cost-autopay-toggle').checked = false;
 
     if (costId) {
-        _root.getElementById('cost-modal-title').textContent = 'Edit Recurring Cost';
+        _root.getElementById('cost-modal-title').textContent = 'Edit Cost';
         const cost = recurringCosts.find(c => c.id === costId);
         if (cost) {
-            _root.getElementById('cost-id').value          = cost.id;
-            _root.getElementById('cost-name').value        = cost.name;
-            _root.getElementById('cost-amount').value      = cost.amount;
-            _root.getElementById('cost-due-day').value     = cost.dueDay || '';
-            _root.getElementById('cost-category').value   = cost.category || 'other';
-            _root.getElementById('cost-payment-method').value = cost.paymentMethod || 'direct';
-            _root.getElementById('cost-amount-type').value = cost.amountType || 'fixed';
+            _root.getElementById('cost-id').value              = cost.id;
+            _root.getElementById('cost-name').value            = cost.name;
+            _root.getElementById('cost-amount').value          = cost.amount;
+            _root.getElementById('cost-due-day').value         = cost.dueDay || '';
+            _root.getElementById('cost-category').value        = cost.category || 'other';
+            _root.getElementById('cost-payment-method').value  = cost.paymentMethod || 'direct';
+            _root.getElementById('cost-amount-type').value     = cost.amountType || 'fixed';
             _root.getElementById('cost-autopay-toggle').checked = !!cost.autoPay;
+            // Restore interval
+            const n = cost.intervalMonths || 1;
+            const intervalEl = _root.getElementById('cost-interval');
+            if ([1,2,3,6,12].includes(n)) {
+                intervalEl.value = String(n);
+            } else {
+                intervalEl.value = 'custom';
+                _root.getElementById('cost-interval-custom').value = n;
+            }
         }
     } else {
-        _root.getElementById('cost-modal-title').textContent = 'Add Recurring Cost';
+        _root.getElementById('cost-modal-title').textContent = 'Add Cost';
         _root.getElementById('cost-payment-method').value = 'direct';
         _root.getElementById('cost-amount-type').value = 'fixed';
+        _root.getElementById('cost-interval').value = '1';
     }
+    updateCostModalIntervalVisibility();
 
     costModal.style.display = 'flex';
     void costModal.offsetWidth;
@@ -3591,15 +3955,28 @@ function saveCost() {
         const paymentMethod = _root.getElementById('cost-payment-method').value || 'direct';
         const amountType    = _root.getElementById('cost-amount-type').value || 'fixed';
         const autoPay       = _root.getElementById('cost-autopay-toggle').checked;
+        const intervalSel   = _root.getElementById('cost-interval').value;
+        const intervalMonths = intervalSel === 'custom'
+            ? (parseInt(_root.getElementById('cost-interval-custom').value) || 1)
+            : parseInt(intervalSel) || 1;
 
         if (!name.trim())   throw new Error('Please enter a name for this cost.');
         if (isNaN(amount))  throw new Error('Please enter a valid amount.');
+        if (intervalMonths < 1) throw new Error('Interval must be at least 1 month.');
 
         if (id) {
             const idx = recurringCosts.findIndex(c => c.id === id);
-            if (idx !== -1) recurringCosts[idx] = { id, name, amount, dueDay, category, paymentMethod, amountType, autoPay };
+            if (idx !== -1) {
+                const existing = recurringCosts[idx];
+                // Preserve nextDueMonth when editing; reset if interval changed
+                const nextDueMonth = intervalMonths > 1
+                    ? (existing.intervalMonths === intervalMonths ? existing.nextDueMonth : currentMonthKey())
+                    : undefined;
+                recurringCosts[idx] = { id, name, amount, dueDay, category, paymentMethod, amountType, autoPay, intervalMonths, nextDueMonth };
+            }
         } else {
-            recurringCosts.push({ id: Date.now().toString(), name, amount, dueDay, category, paymentMethod, amountType, autoPay });
+            const nextDueMonth = intervalMonths > 1 ? currentMonthKey() : undefined;
+            recurringCosts.push({ id: Date.now().toString(), name, amount, dueDay, category, paymentMethod, amountType, autoPay, intervalMonths, nextDueMonth });
         }
 
         saveData().catch(err => console.error("Debt Snowball: save failed —", err));
@@ -4003,11 +4380,12 @@ function renderRecurringCostsList() {
         return;
     }
 
-    const totalRecurring = recurringCosts.reduce((sum, c) => sum + c.amount, 0);
-    const directRecurring = recurringCosts.filter(c => c.paymentMethod === 'direct').reduce((sum, c) => sum + c.amount, 0);
-    const cardRecurring = recurringCosts.filter(c => c.paymentMethod === 'card').reduce((sum, c) => sum + c.amount, 0);
+    const activeCosts    = recurringCosts.filter(isCostDueThisMonth);
+    const totalRecurring  = activeCosts.reduce((sum, c) => sum + c.amount, 0);
+    const directRecurring = activeCosts.filter(c => c.paymentMethod === 'direct').reduce((sum, c) => sum + c.amount, 0);
+    const cardRecurring   = activeCosts.filter(c => c.paymentMethod === 'card').reduce((sum, c) => sum + c.amount, 0);
     if (recurringSummaryEl) {
-        recurringSummaryEl.textContent = `Total Monthly Recurring: $${totalRecurring.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} (Direct $${directRecurring.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}, Card $${cardRecurring.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})})`;
+        recurringSummaryEl.textContent = `Due This Month: $${totalRecurring.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} (Direct $${directRecurring.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}, Card $${cardRecurring.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})})`;
     }
 
     costsListContainer.style.display = 'block';
@@ -4015,9 +4393,10 @@ function renderRecurringCostsList() {
     const currentDay = new Date().getDate();
 
     const categories = [
-        { key: 'utility',      label: '⚡ Utilities',     cls: 'cost-subsection-utility' },
-        { key: 'subscription', label: '📱 Subscriptions',  cls: 'cost-subsection-subscription' },
-        { key: 'other',        label: '📦 Other',          cls: 'cost-subsection-other' },
+        { key: 'utility',      label: '⚡ Utilities',              cls: 'cost-subsection-utility' },
+        { key: 'subscription', label: '📱 Subscriptions',          cls: 'cost-subsection-subscription' },
+        { key: 'other',        label: '📦 Other',                   cls: 'cost-subsection-other' },
+        { key: 'one-time',     label: '🗓 One-Time (This Month)',   cls: 'cost-subsection-onetime' },
     ];
 
     let cardIndex = 0;
@@ -4030,8 +4409,10 @@ function renderRecurringCostsList() {
 
         const header = document.createElement('div');
         header.className = 'cost-subsection-header';
-        const groupTotal = group.reduce((s, c) => s + c.amount, 0);
-        header.innerHTML = `<span>${label}</span><span class="cost-subsection-total">${formatMoney(groupTotal)}/mo</span>`;
+        const groupActive = group.filter(isCostDueThisMonth);
+        const groupTotal  = groupActive.reduce((s, c) => s + c.amount, 0);
+        const totalSuffix = key === 'one-time' ? '' : '/mo';
+        header.innerHTML = `<span>${label}</span><span class="cost-subsection-total">${formatMoney(groupTotal)}${totalSuffix}</span>`;
         section.appendChild(header);
 
         const grid = document.createElement('div');
@@ -4049,22 +4430,30 @@ function renderRecurringCostsList() {
             const amountTypeBadge = amountType === 'flexible'
                 ? '<span class="amount-type-badge flexible-badge">〜 Flexible</span>'
                 : '<span class="amount-type-badge fixed-badge">= Fixed</span>';
+            const isDue     = isCostDueThisMonth(cost);
+            const intN      = cost.intervalMonths || 1;
+            const intBadge  = intN > 1 ? `<span class="interval-badge">${intervalLabel(intN)}</span>` : '';
+            const notDueBadge = (!isDue && intN > 1)
+                ? `<span class="not-due-badge">Next: ${formatMonthLabel(cost.nextDueMonth)}</span>` : '';
             const paidState = paidStatus[cost.id];
             const el = document.createElement('div');
             el.className = 'debt-card cost-card' +
                 (isCard ? ' cost-card-credit' : ' cost-card-direct') +
-                (paidState ? ' card-paid' : '');
+                (paidState ? ' card-paid' : '') +
+                (isDue ? '' : ' not-due-month');
             el.style.animation = `cardReveal 0.45s cubic-bezier(0.16, 1, 0.3, 1) backwards ${cardIndex * 0.08}s`;
             cardIndex++;
             const autoBadge   = cost.autoPay ? '<span class="autopay-badge">⚡ Auto-Pay</span>' : '';
             const paidOverlay = paidState ? buildPaidOverlay(cost.autoPay) : '';
+            const amountLabel = intN > 1 ? 'Amount' : 'Monthly Amount';
+            const dueFreq     = intN > 1 ? intervalLabel(intN).replace('📆 ', '') : 'Every month';
             el.innerHTML = `
                 ${paidOverlay}
-                <div class="debt-name">${escHtml(cost.name)}<span class="recurring-badge">♻ Recurring</span>${paymentMethodBadge}${amountTypeBadge}${autoBadge}</div>
-                <div class="debt-detail"><span class="debt-detail-label">Monthly Amount</span><span class="debt-detail-value cost-amount">${formatMoney(cost.amount)}</span></div>
-                <div class="debt-detail"><span class="debt-detail-label">Due Day</span><span class="debt-detail-value">${formatOrdinal(cost.dueDay||1)} of each month</span></div>
+                <div class="debt-name">${escHtml(cost.name)}<span class="recurring-badge">♻ Recurring</span>${paymentMethodBadge}${amountTypeBadge}${intBadge}${autoBadge}${notDueBadge}</div>
+                <div class="debt-detail"><span class="debt-detail-label">${amountLabel}</span><span class="debt-detail-value cost-amount">${formatMoney(cost.amount)}</span></div>
+                <div class="debt-detail"><span class="debt-detail-label">Due</span><span class="debt-detail-value">${formatOrdinal(cost.dueDay||1)} — ${dueFreq}</span></div>
                 <div class="debt-detail"><span class="debt-detail-label">Payment Method</span><span class="debt-detail-value">${paymentMethodLabel}</span></div>
-                <div class="paid-action-row">${buildPaidButton(cost.id, cost.autoPay, paidState, isPastDue)}</div>
+                <div class="paid-action-row">${isDue ? buildPaidButton(cost.id, cost.autoPay, paidState, isPastDue) : ''}</div>
                 <div class="debt-actions">
                     <button class="btn btn-secondary btn-edit-cost" data-id="${cost.id}">Edit</button>
                     <button class="btn btn-danger btn-delete-cost" data-id="${cost.id}">Delete</button>
@@ -4231,9 +4620,10 @@ function getStrategyOrder(debtList, strat) {
 // for both the chart and the debt cards.
 function runSimulation(strat) {
     const totalIncome         = incomeEntries.reduce((s,e) => s + e.amount, 0);
-    const totalRecurringDirect = recurringCosts.filter(c => c.paymentMethod !== 'card').reduce((s,c) => s + c.amount, 0);
-    const totalRecurringCard   = recurringCosts.filter(c => c.paymentMethod === 'card').reduce((s,c) => s + c.amount, 0);
-    const totalRecurring       = recurringCosts.reduce((s,c) => s + c.amount, 0);
+    const activeCosts          = recurringCosts.filter(isCostDueThisMonth);
+    const totalRecurringDirect = activeCosts.filter(c => c.paymentMethod !== 'card').reduce((s,c) => s + c.amount, 0);
+    const totalRecurringCard   = activeCosts.filter(c => c.paymentMethod === 'card').reduce((s,c) => s + c.amount, 0);
+    const totalRecurring       = activeCosts.reduce((s,c) => s + c.amount, 0);
     // Only direct-payment costs reduce the immediate cash available for debt payoff;
     // card-charged costs are already folded into the card's minimum payment.
     const effectiveBudget = totalIncome - totalRecurringDirect;
@@ -4401,8 +4791,9 @@ function renderVisualization(simResults) {
         if ((totalIncome || 0) <= 0) {
             msg = '<strong>No Income:</strong> Add income entries to see a payoff timeline.';
         } else if ((effectiveBudget || 0) <= 0) {
-            const totalRecurringDirect = recurringCosts.filter(c => c.paymentMethod !== 'card').reduce((s,c) => s + c.amount, 0);
-            const totalRecurringCard   = recurringCosts.filter(c => c.paymentMethod === 'card').reduce((s,c) => s + c.amount, 0);
+            const _active              = recurringCosts.filter(isCostDueThisMonth);
+            const totalRecurringDirect = _active.filter(c => c.paymentMethod !== 'card').reduce((s,c) => s + c.amount, 0);
+            const totalRecurringCard   = _active.filter(c => c.paymentMethod === 'card').reduce((s,c) => s + c.amount, 0);
             msg = `<strong>Warning:</strong> Income (${formatMoney(totalIncome)}) is entirely consumed by direct recurring costs (${formatMoney(totalRecurringDirect)}).`
                 + (totalRecurringCard > 0 ? ` Card-charged costs (${formatMoney(totalRecurringCard)}) are excluded from the cash budget.` : '')
                 + ` Increase income or reduce direct costs to free up money for debt payoff.`;
@@ -4598,25 +4989,25 @@ function renderPaymentPlan() {
         events.push({ type: 'checkpoint', id: cp.id, name: 'Bank Balance Sync', day: cp.day, amount: cp.amount, sortKey: cp.day * 1000 + 0.5 });
     });
 
-    recurringCosts.forEach(cost => {
+    recurringCosts.filter(isCostDueThisMonth).forEach(cost => {
         const day = cost.dueDay || 1;
-        events.push({ 
-            type:'recurring', 
-            id: cost.id, 
-            name: cost.name, 
-            day, 
-            amount: cost.amount, 
-            paymentMethod: cost.paymentMethod || 'direct', 
+        events.push({
+            type:'recurring',
+            id: cost.id,
+            name: cost.name,
+            day,
+            amount: cost.amount,
+            paymentMethod: cost.paymentMethod || 'direct',
             amountType: cost.amountType || 'fixed',
-            autoPay: !!cost.autoPay, 
-            sortKey: day * 1000 + 1 
+            autoPay: !!cost.autoPay,
+            sortKey: day * 1000 + 1
         });
     });
 
     const sortedDebts   = getStrategyOrder(debts.filter(d => d.balance > 0), strategy);
     const totalMinPay   = sortedDebts.reduce((s,d) => s + d.minPayment, 0);
     const totalInc      = incomeEntries.reduce((s,e) => s + e.amount, 0);
-    const totalRec      = recurringCosts.reduce((s,c) => s + c.amount, 0);
+    const totalRec      = recurringCosts.filter(isCostDueThisMonth).reduce((s,c) => s + c.amount, 0);
     const extra         = Math.max(0, totalInc - totalRec - totalMinPay);
     const targetId      = sortedDebts[0]?.id;
 
