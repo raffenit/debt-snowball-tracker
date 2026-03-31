@@ -3408,7 +3408,11 @@ const PANEL_HTML = `<div class="app-container">
                 <section id="payment-plan-section" class="card" style="display: none; margin-bottom: 1.5rem;">
                     <div class="section-header" style="margin-bottom: 1rem; align-items: flex-start;">
                         <div style="width: 100%;">
-                            <h2 style="margin-bottom: 0.5rem;">This Month's Payment Plan</h2>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; gap:0.5rem;">
+                                <button id="plan-prev-month-btn" class="btn btn-secondary" style="padding:0.3rem 0.7rem; font-size:0.8rem; white-space:nowrap; visibility:hidden;">← Previous</button>
+                                <h2 id="payment-plan-month-title" style="margin:0; text-align:center; font-size:clamp(0.95rem,3vw,1.35rem); flex:1;">Payment Plan</h2>
+                                <button id="plan-next-month-btn" class="btn btn-primary" style="padding:0.3rem 0.7rem; font-size:0.8rem; white-space:nowrap; visibility:hidden;">Current Month →</button>
+                            </div>
                             
                             <div class="forecast-bar" id="runway-dashboard">
                                 <div class="forecast-item">
@@ -3762,6 +3766,15 @@ const PANEL_HTML = `<div class="app-container">
                     <label for="income-amount">Amount ($)</label>
                     <input type="number" id="income-amount" min="0" step="0.01" required placeholder="e.g. 6000">
                 </div>
+                <div class="input-group">
+                    <label for="income-schedule">Recurrence</label>
+                    <select id="income-schedule">
+                        <option value="one-time">One-time (this month only)</option>
+                        <option value="monthly">Monthly (same day each month)</option>
+                        <option value="biweekly">Every 2 weeks</option>
+                    </select>
+                    <p class="subtitle" id="income-schedule-hint" style="font-size:0.8rem; margin-top:0.3rem; display:none;"></p>
+                </div>
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary close-income-modal">Cancel</button>
                     <button type="submit" class="btn btn-success">Save Income</button>
@@ -3993,6 +4006,7 @@ let inlineExpenseBudget = null;  // UI state: which budget ID has the inline add
 let paydownChart = null;
 let lastSimPayoffDate = null; // used for countdown ticker
 let countdownInterval = null;
+let viewingArchiveIndex = null; // null = current month, number = index into monthlyArchives
 
 // ─── DOM Elements ───────────────────────────────────────────────────────────
 const debtsListContainer    = _root.getElementById('debts-list');
@@ -4100,13 +4114,13 @@ async function loadBackendData() {
                     startingBalance: result.startingBalance || 0,
                     paidStatus:     result.paidStatus     || {},
                     totalIncome:    (result.incomeEntries  || []).reduce((s, e) => s + e.amount, 0),
-                    totalCosts:     (result.recurringCosts || []).reduce((s, c) => s + c.amount, 0),
+                    totalCosts:     (result.recurringCosts || []).filter(c => isCostDueInMonth(c, prevMonth)).reduce((s, c) => s + c.amount, 0),
                 };
                 monthlyArchives.unshift(archive);
                 if (monthlyArchives.length > 24) monthlyArchives.pop();
 
                 // Clear month-specific data; prune one-time costs; advance interval nextDueMonth
-                incomeEntries  = [];
+                incomeEntries  = generateRecurringIncomeForMonth(result.incomeEntries || [], thisMonth);
                 checkpoints    = [];
                 recurringCosts = recurringCosts
                     .filter(c => (c.category || 'other') !== 'one-time')
@@ -4198,13 +4212,13 @@ async function advanceToNextMonth() {
         startingBalance,
         paidStatus:     { ...paidStatus },
         totalIncome:    incomeEntries.reduce((s, e) => s + e.amount, 0),
-        totalCosts:     recurringCosts.reduce((s, c) => s + c.amount, 0),
+        totalCosts:     recurringCosts.filter(c => isCostDueInMonth(c, currentKey)).reduce((s, c) => s + c.amount, 0),
     };
     monthlyArchives.unshift(archive);
     if (monthlyArchives.length > 24) monthlyArchives.pop();
 
     // Reset month-specific data, prune one-time costs, advance interval nextDueMonth
-    incomeEntries  = [];
+    incomeEntries  = generateRecurringIncomeForMonth(incomeEntries, nextKey);
     checkpoints    = [];
     recurringCosts = recurringCosts
         .filter(c => (c.category || 'other') !== 'one-time')
@@ -4259,6 +4273,69 @@ function addMonthsToKey(key, n) {
     return `${Math.floor(total / 12)}-${total % 12}`;
 }
 
+// Generate all biweekly occurrences of a paycheck within a given month.
+// anchorDateStr is any past reference date on the correct two-week cycle (YYYY-MM-DD).
+function generateBiweeklyForMonth(label, amount, anchorDateStr, monthKey) {
+    const anchor = new Date(anchorDateStr + 'T00:00:00');
+    const [y, m] = monthKey.split('-').map(Number);
+    const monthStart = new Date(y, m, 1);
+    const monthEnd   = new Date(y, m + 1, 0);
+    const msPerDay   = 86400000;
+    const entries    = [];
+
+    // Step forward from anchor in 14-day increments until we enter the month
+    let d = new Date(anchor);
+    const daysToStart = Math.floor((monthStart - anchor) / msPerDay);
+    if (daysToStart > 0) {
+        d = new Date(anchor.getTime() + Math.floor(daysToStart / 14) * 14 * msPerDay);
+    }
+
+    while (d <= monthEnd) {
+        if (d >= monthStart) {
+            const mm = String(m + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            entries.push({
+                id: `${Date.now()}${Math.random().toString(36).slice(2, 7)}`,
+                label, amount,
+                date: `${y}-${mm}-${dd}`,
+                scheduleType: 'biweekly',
+                scheduleAnchorDate: anchorDateStr,
+            });
+        }
+        d = new Date(d.getTime() + 14 * msPerDay);
+    }
+    return entries;
+}
+
+// Carry recurring income entries forward into newMonthKey.
+// Monthly entries get their date updated; biweekly entries are regenerated; one-time entries are dropped.
+function generateRecurringIncomeForMonth(oldEntries, newMonthKey) {
+    const [y, m] = newMonthKey.split('-').map(Number);
+    const newEntries = [];
+
+    // Monthly recurring: update date to same day in new month
+    oldEntries.filter(e => e.scheduleType === 'monthly').forEach(e => {
+        const day     = e.scheduleDay || parseInt(e.date.split('-')[2]);
+        const lastDay = new Date(y, m + 1, 0).getDate();
+        const actual  = Math.min(day, lastDay);
+        const mm = String(m + 1).padStart(2, '0');
+        const dd = String(actual).padStart(2, '0');
+        newEntries.push({ ...e, scheduleDay: day, date: `${y}-${mm}-${dd}` });
+    });
+
+    // Biweekly: deduplicate templates by (label|amount|anchorDate) then regenerate
+    const seen = new Set();
+    oldEntries.filter(e => e.scheduleType === 'biweekly' && e.scheduleAnchorDate).forEach(e => {
+        const key = `${e.label}|${e.amount}|${e.scheduleAnchorDate}`;
+        if (!seen.has(key)) {
+            seen.add(key);
+            newEntries.push(...generateBiweeklyForMonth(e.label, e.amount, e.scheduleAnchorDate, newMonthKey));
+        }
+    });
+
+    return newEntries;
+}
+
 // Convert app month key (YYYY-M, 0-indexed month) ↔ HTML month input value (YYYY-MM, 1-indexed)
 function keyToHtmlMonth(key) {
     const [year, month] = key.split('-').map(Number);
@@ -4273,6 +4350,12 @@ function isCostDueThisMonth(cost) {
     if ((cost.intervalMonths || 1) <= 1) return true;
     const next = cost.nextDueMonth || currentMonthKey();
     return monthKeyToIndex(next) <= monthKeyToIndex(currentMonthKey());
+}
+
+function isCostDueInMonth(cost, monthKey) {
+    if ((cost.intervalMonths || 1) <= 1) return true;
+    const next = cost.nextDueMonth || monthKey;
+    return monthKeyToIndex(next) <= monthKeyToIndex(monthKey);
 }
 
 function intervalLabel(n) {
@@ -4599,6 +4682,20 @@ function setupEventListeners() {
         }
     });
 
+    // Payment plan month navigation
+    _root.getElementById('plan-prev-month-btn').addEventListener('click', () => {
+        const btn = _root.getElementById('plan-prev-month-btn');
+        const idx = parseInt(btn.dataset.archiveIdx ?? '0');
+        if (idx < monthlyArchives.length) { viewingArchiveIndex = idx; renderPaymentPlan(); }
+    });
+    _root.getElementById('plan-next-month-btn').addEventListener('click', () => {
+        viewingArchiveIndex = null;
+        renderPaymentPlan();
+    });
+
+    // Income schedule type hint
+    _root.getElementById('income-schedule').addEventListener('change', updateIncomeScheduleHint);
+
     // Archive / History
     _root.getElementById('history-btn').addEventListener('click', openArchiveModal);
     _root.getElementById('close-archive-modal').addEventListener('click', closeArchiveModal);
@@ -4908,15 +5005,19 @@ function closeCostModal() {
 function openIncomeModal(incomeId = null) {
     incomeForm.reset();
     _root.getElementById('income-id').value = '';
+    _root.getElementById('income-schedule').value = 'one-time';
+    _root.getElementById('income-schedule-hint').style.display = 'none';
 
     if (incomeId) {
         _root.getElementById('income-modal-title').textContent = 'Edit Income Entry';
         const entry = incomeEntries.find(e => e.id === incomeId);
         if (entry) {
-            _root.getElementById('income-id').value     = entry.id;
-            _root.getElementById('income-label').value  = entry.label;
-            _root.getElementById('income-date').value   = entry.date;
-            _root.getElementById('income-amount').value = entry.amount;
+            _root.getElementById('income-id').value       = entry.id;
+            _root.getElementById('income-label').value    = entry.label;
+            _root.getElementById('income-date').value     = entry.date;
+            _root.getElementById('income-amount').value   = entry.amount;
+            _root.getElementById('income-schedule').value = entry.scheduleType || 'one-time';
+            updateIncomeScheduleHint();
         }
     } else {
         _root.getElementById('income-modal-title').textContent = 'Add Income Entry';
@@ -4926,6 +5027,21 @@ function openIncomeModal(incomeId = null) {
     void incomeModal.offsetWidth;
     incomeModal.classList.add('active');
     setTimeout(() => incomeModal.querySelector('input:not([type=hidden])').focus(), 50);
+}
+
+function updateIncomeScheduleHint() {
+    const sel  = _root.getElementById('income-schedule');
+    const hint = _root.getElementById('income-schedule-hint');
+    if (!sel || !hint) return;
+    if (sel.value === 'monthly') {
+        hint.textContent = 'This day of the month will be reused each month automatically.';
+        hint.style.display = '';
+    } else if (sel.value === 'biweekly') {
+        hint.textContent = 'All biweekly occurrences within the current month will be added as separate entries.';
+        hint.style.display = '';
+    } else {
+        hint.style.display = 'none';
+    }
 }
 
 function closeIncomeModal() {
@@ -5377,20 +5493,29 @@ function deleteExpense(budgetId, expenseId) {
 // ─── CRUD: Income ────────────────────────────────────────────────────────────
 function saveIncome() {
     try {
-        const id     = _root.getElementById('income-id').value;
-        const label  = _root.getElementById('income-label').value;
-        const date   = _root.getElementById('income-date').value;
-        const amount = parseFloat(_root.getElementById('income-amount').value);
+        const id           = _root.getElementById('income-id').value;
+        const label        = _root.getElementById('income-label').value;
+        const date         = _root.getElementById('income-date').value;
+        const amount       = parseFloat(_root.getElementById('income-amount').value);
+        const scheduleType = _root.getElementById('income-schedule').value || 'one-time';
 
         if (!label.trim()) throw new Error('Please enter a label for this income entry.');
         if (!date)         throw new Error('Please select a date.');
         if (isNaN(amount)) throw new Error('Please enter a valid amount.');
 
+        const entryBase = { label, date, amount, scheduleType };
+        if (scheduleType === 'monthly')   entryBase.scheduleDay = parseInt(date.split('-')[2]);
+        if (scheduleType === 'biweekly')  entryBase.scheduleAnchorDate = date;
+
         if (id) {
             const idx = incomeEntries.findIndex(e => e.id === id);
-            if (idx !== -1) incomeEntries[idx] = { id, label, date, amount };
+            if (idx !== -1) incomeEntries[idx] = { id, ...entryBase };
+        } else if (scheduleType === 'biweekly') {
+            const generated = generateBiweeklyForMonth(label, amount, date, currentMonthKey());
+            if (generated.length === 0) throw new Error('No occurrences of this schedule fall in the current month. Choose a date within the current month as the starting point.');
+            incomeEntries.push(...generated);
         } else {
-            incomeEntries.push({ id: Date.now().toString(), label, date, amount });
+            incomeEntries.push({ id: Date.now().toString(), ...entryBase });
         }
 
         saveData().catch(err => console.error("Debt Snowball: save failed —", err));
@@ -5434,6 +5559,8 @@ function togglePaid(id, autoPay) {
         }, 160);
     }
     saveData().catch(err => console.error('Debt Snowball: save failed —', err));
+    renderRecurringCostsList();
+    renderDebtsList(runSimulation(strategy));
 }
 
 // ─── Inline Confirm & Undo Toast ─────────────────────────────────────────────
@@ -5673,12 +5800,10 @@ function renderUI() {
     renderDebtsList(simResults);
     renderVisualization(simResults);
     
-    // NOTE: renderPaymentPlan actually returns nothing right now. 
-    // To grab the schedule, we need to let it return the array it builds.
-    const schedule = renderPaymentPlan(); 
-    
-    // Fire our new HA Sensor function!
-    updateHASensors(simResults, schedule); 
+    const schedule = renderPaymentPlan();
+
+    // Only update HA sensors from current-month data; renderPaymentPlan returns null in archive view
+    if (schedule !== null) updateHASensors(simResults, schedule);
 }
 
 function formatOrdinal(day) {
@@ -5850,7 +5975,7 @@ function renderRecurringCostsList() {
                     ? `<span class="not-due-badge">Next: ${formatMonthLabel(cost.nextDueMonth)}</span>` : '';
                 const autoBadge   = (!isOneTime && cost.autoPay) ? '<span class="autopay-badge">⚡ Auto-Pay</span>' : '';
                 const paidOverlay = paidState ? buildPaidOverlay(cost.autoPay) : '';
-                const dueFreq     = intN > 1 ? intervalLabel(intN).replace('📆 ', '') : 'Monthly';
+                const dueFreq     = isOneTime ? '' : intN > 1 ? intervalLabel(intN).replace('📆 ', '') : 'Monthly';
 
                 const el = document.createElement('div');
                 el.style.animation = `cardReveal 0.45s cubic-bezier(0.16, 1, 0.3, 1) backwards ${cardIndex * 0.08}s`;
@@ -5889,14 +6014,15 @@ function renderRecurringCostsList() {
                         (isDue ? '' : ' not-due-month');
                     const recurringBadge = isOneTime ? '' : '<span class="recurring-badge">♻ Recurring</span>';
                     const badgesHtml = [recurringBadge, paymentMethodBadge, amountTypeBadge, intBadge, autoBadge, notDueBadge].filter(Boolean).join('');
-                    const amountLabel = intN > 1 ? 'Amount' : 'Monthly Amount';
+                    const amountLabel = (isOneTime || intN > 1) ? 'Amount' : 'Monthly Amount';
                     const paymentMethodLabel = isCard ? 'Credit / Debit Card' : 'Direct Pay (Bank / Cash)';
+                    const dueValue = dueFreq ? `${formatOrdinal(cost.dueDay||1)} — ${dueFreq}` : formatOrdinal(cost.dueDay||1);
                     el.innerHTML = `
                         ${paidOverlay}
                         <div class="debt-name">${escHtml(cost.name)}</div>
                         ${badgesHtml ? `<div class="cost-badges-line">${badgesHtml}</div>` : ''}
                         <div class="debt-detail"><span class="debt-detail-label">${amountLabel}</span><span class="debt-detail-value cost-amount">${formatMoney(cost.amount)}</span></div>
-                        <div class="debt-detail"><span class="debt-detail-label">Due</span><span class="debt-detail-value">${formatOrdinal(cost.dueDay||1)} — ${dueFreq}</span></div>
+                        <div class="debt-detail"><span class="debt-detail-label">Due</span><span class="debt-detail-value">${dueValue}</span></div>
                         <div class="debt-detail"><span class="debt-detail-label">Payment</span><span class="debt-detail-value">${paymentMethodLabel}</span></div>
                         <div class="paid-action-row">${isDue ? buildPaidButton(cost.id, cost.autoPay, paidState, isPastDue) : ''}</div>
                         <div class="cost-icon-actions">
@@ -6472,25 +6598,53 @@ function renderPaymentPlan() {
     const section = _root.getElementById('payment-plan-section');
     const list    = _root.getElementById('payment-plan-list');
 
+    // ── Archive-view wiring ────────────────────────────────────────────────────
+    const isArchiveView = viewingArchiveIndex !== null && !!monthlyArchives[viewingArchiveIndex];
+    const archiveData   = isArchiveView ? monthlyArchives[viewingArchiveIndex] : null;
+    const _income       = archiveData ? (archiveData.incomeEntries  || []) : incomeEntries;
+    const _costs        = archiveData ? (archiveData.recurringCosts || []) : recurringCosts;
+    const _checkpoints  = archiveData ? (archiveData.checkpoints    || []) : checkpoints;
+    const _startBal     = archiveData ? (archiveData.startingBalance || 0)  : startingBalance;
+    const _paidStatus   = archiveData ? (archiveData.paidStatus      || {}) : paidStatus;
+    const _monthKey     = archiveData ? archiveData.month : currentMonthKey();
+
+    // ── Month title & navigation ───────────────────────────────────────────────
+    const monthTitleEl = _root.getElementById('payment-plan-month-title');
+    const prevBtn      = _root.getElementById('plan-prev-month-btn');
+    const nextBtn      = _root.getElementById('plan-next-month-btn');
+
+    if (monthTitleEl) monthTitleEl.textContent = formatMonthLabel(_monthKey) + ' — Payment Plan';
+
+    if (prevBtn) {
+        const prevIdx = isArchiveView ? viewingArchiveIndex + 1 : 0;
+        if (prevIdx < monthlyArchives.length) {
+            prevBtn.style.visibility = 'visible';
+            prevBtn.dataset.archiveIdx = prevIdx;
+        } else {
+            prevBtn.style.visibility = 'hidden';
+        }
+    }
+    if (nextBtn) nextBtn.style.visibility = isArchiveView ? 'visible' : 'hidden';
+
     list.innerHTML = '';
 
-    if (incomeEntries.length === 0 && startingBalance <= 0) { section.style.display = 'none'; return; }
+    if (_income.length === 0 && _startBal <= 0) { section.style.display = 'none'; return; }
 
     const events = [];
     const today = new Date();
     const currentDay = today.getDate();
 
-    incomeEntries.forEach(entry => {
+    _income.forEach(entry => {
         const day = parseInt(entry.date.split('-')[2]);
         events.push({ type:'income', id: entry.id, name: entry.label, day, date: new Date(entry.date+'T00:00:00'), amount: entry.amount, sortKey: day * 1000 });
     });
 
-    checkpoints.forEach(cp => {
+    _checkpoints.forEach(cp => {
         // Sortkey +0.5 ensures checkpoints happen AFTER standard income on that day, but BEFORE bills are paid.
         events.push({ type: 'checkpoint', id: cp.id, name: 'Bank Balance Sync', day: cp.day, amount: cp.amount, sortKey: cp.day * 1000 + 0.5 });
     });
 
-    recurringCosts.filter(isCostDueThisMonth).forEach(cost => {
+    _costs.filter(c => isCostDueInMonth(c, _monthKey)).forEach(cost => {
         const day = cost.dueDay || 1;
         events.push({
             type:'recurring',
@@ -6507,8 +6661,8 @@ function renderPaymentPlan() {
 
     const sortedDebts   = getStrategyOrder(debts.filter(d => d.balance > 0), strategy);
     const totalMinPay   = sortedDebts.reduce((s,d) => s + d.minPayment, 0);
-    const totalInc      = incomeEntries.reduce((s,e) => s + e.amount, 0);
-    const totalRec      = recurringCosts.filter(isCostDueThisMonth).reduce((s,c) => s + c.amount, 0);
+    const totalInc      = _income.reduce((s,e) => s + e.amount, 0);
+    const totalRec      = _costs.filter(c => isCostDueInMonth(c, _monthKey)).reduce((s,c) => s + c.amount, 0);
     const extra         = Math.max(0, totalInc - totalRec - totalMinPay);
     const targetId      = sortedDebts[0]?.id;
 
@@ -6522,7 +6676,7 @@ function renderPaymentPlan() {
     events.sort((a,b) => a.sortKey - b.sortKey);
 
     // Date-aware scheduling with card-passthrough logic
-    let cashPool       = startingBalance;
+    let cashPool       = _startBal;
     let incomeReleased = 0;
     const incomeSorted = events.filter(e => e.type === 'income').sort((a,b) => a.day - b.day);
     const schedule     = [];
@@ -6530,8 +6684,8 @@ function renderPaymentPlan() {
     let totalExpenses  = 0;
 
     // Inject starting balance as a visible schedule row if non-zero
-    if (startingBalance > 0) {
-        schedule.push({ type: 'starting-balance', name: 'Day 1 Starting Balance', day: 1, amount: startingBalance, balance: cashPool, sortKey: 0 });
+    if (_startBal > 0) {
+        schedule.push({ type: 'starting-balance', name: 'Day 1 Starting Balance', day: 1, amount: _startBal, balance: cashPool, sortKey: 0 });
     }
 
     const releaseIncomeThroughDay = (day) => {
@@ -6597,27 +6751,27 @@ function renderPaymentPlan() {
 
     if (schedule.length === 0) { section.style.display = 'none'; return; }
 
-    // --- MATH ONLY: Cash runway estimate ---
-    const sortedFutureIncomes = incomeEntries
+    // --- MATH ONLY: Cash runway estimate (current month only) ---
+    const sortedFutureIncomes = _income
         .map(e => ({ date: new Date(e.date+'T00:00:00'), amount: e.amount, label: e.label }))
         .filter(e => e.date >= today)
         .sort((a,b) => a.date - b.date);
     const nextIncome = sortedFutureIncomes[0] || null;
     const targetDay  = nextIncome ? nextIncome.date.getDate() : 31;
 
-    let testBalance  = startingBalance;
+    let testBalance  = _startBal;
     let minProjected = testBalance;
 
     schedule.forEach(item => {
         const itemDay = item.day || 1;
         if (itemDay < currentDay) return;
         if (nextIncome && itemDay >= targetDay && item.type !== 'income') return;
-        
+
         if (item.type === 'checkpoint')                       testBalance = item.amount;
         else if (item.type === 'income')                      testBalance += item.amount;
         else if (item.type === 'recurring' && item.isCard) { /* card — no cash impact */ }
         else if (item.type !== 'starting-balance')            testBalance -= item.amount;
-        
+
         if (testBalance < minProjected) {
             minProjected = testBalance;
         }
@@ -6627,10 +6781,10 @@ function renderPaymentPlan() {
     const summaryNext   = _root.getElementById('runway-next-paycheck');
     const summaryMin    = _root.getElementById('runway-min-project');
     const summaryStatus = _root.getElementById('runway-status');
-    
+
     if (summaryNext)   summaryNext.textContent   = nextIncome ? `${nextIncome.label} (${nextIncome.date.toLocaleDateString(undefined,{month:'short',day:'numeric'})})` : 'None';
     if (summaryMin)    summaryMin.textContent    = formatMoney(minProjected);
-    
+
     if (summaryStatus) {
         if (minProjected < 0) {
             summaryStatus.innerHTML = '<span style="color:var(--danger-color);">⚠ At Risk (Negative Balance)</span>';
@@ -6645,9 +6799,9 @@ function renderPaymentPlan() {
 
     // --- UI CREATION: Build the visual rows ---
     schedule.forEach((item, index) => {
-        const itemPaid = paidStatus[item.id];
+        const itemPaid = _paidStatus[item.id];
         const row      = document.createElement('div');
-        
+
         let icon, typeBadge = '', amountClass, dayLabel, rowBgClass;
 
         if (item.type === 'starting-balance') {
@@ -6656,59 +6810,59 @@ function renderPaymentPlan() {
             amountClass = 'schedule-amount-income';
             dayLabel    = formatOrdinal(item.day || 1);
             rowBgClass  = 'schedule-starting';
-            
+
         } else if (item.type === 'checkpoint') {
             icon        = '⚖️';
             typeBadge   = '<span class="schedule-badge schedule-badge-start" style="background:rgba(168,85,247,0.15);color:var(--promo-light);border-color:rgba(168,85,247,0.3);">Manual Sync</span>';
-            amountClass = ''; 
+            amountClass = '';
             dayLabel    = formatOrdinal(item.day);
             rowBgClass  = 'schedule-checkpoint';
-            
+
         } else if (item.type === 'income') {
             icon        = '💵';
             typeBadge   = '<span class="schedule-badge schedule-badge-income">Deposit</span>';
             amountClass = 'schedule-amount-income';
             dayLabel    = item.date.toLocaleDateString(undefined, { month:'short', day:'numeric' });
             rowBgClass  = 'schedule-income';
-            
+
         } else if (item.type === 'recurring') {
             const isCard = item.paymentMethod === 'card' || item.isCard;
             icon = isCard ? '💳' : '🏦';
-            
-            const methodBadge = isCard 
-                ? '<span class="schedule-badge card-badge" style="border: 1px solid rgba(99, 102, 241, 0.45);">💳 Card</span>' 
+
+            const methodBadge = isCard
+                ? '<span class="schedule-badge card-badge" style="border: 1px solid rgba(99, 102, 241, 0.45);">💳 Card</span>'
                 : '<span class="schedule-badge direct-badge" style="border: 1px solid rgba(20, 184, 166, 0.45);">🏦 Direct</span>';
-                
+
             const amtBadge = item.amountType === 'flexible'
                 ? '<span class="schedule-badge flexible-badge">〜 Flexible</span>'
                 : '<span class="schedule-badge fixed-badge">= Fixed</span>';
-                
+
             typeBadge = methodBadge + amtBadge;
-            
+
             if (item.autoPay && !itemPaid) {
                 typeBadge += '<span class="schedule-badge schedule-badge-autopay">⚡ Auto</span>';
             }
-            
+
             amountClass = 'schedule-amount-expense';
             dayLabel    = formatOrdinal(item.day);
             rowBgClass  = isCard ? 'schedule-recurring-card' : 'schedule-recurring-direct';
-            
+
         } else {
-            icon        = '🧾'; 
+            icon        = '🧾';
             const directBadge = '<span class="schedule-badge direct-badge" style="border: 1px solid rgba(20, 184, 166, 0.45);">🏦 Direct</span>';
             const targetBadge = item.isSnowballTarget
                 ? `<span class="snowball-badge">${strategy==='snowball'?'❄️':'🌊'} ${strategy==='snowball'?'Snowball':'Avalanche'} Target</span>`
                 : '';
-                
+
             typeBadge = directBadge + targetBadge;
-            
+
             if (item.autoPay && !itemPaid) {
                 typeBadge += '<span class="schedule-badge schedule-badge-autopay">⚡ Auto</span>';
             }
-            
+
             amountClass = 'schedule-amount-expense';
             dayLabel    = formatOrdinal(item.day);
-            rowBgClass  = 'schedule-debt'; 
+            rowBgClass  = 'schedule-debt';
         }
 
         row.className  = `schedule-row ${rowBgClass}${itemPaid ? ' schedule-row-paid' : ''}`;
@@ -6726,20 +6880,21 @@ function renderPaymentPlan() {
 
         const sign     = item.type === 'income' ? '+' : (item.type === 'checkpoint' || item.type === 'starting-balance') ? '' : '−';
         const balClass = item.balance <= 0 ? 'balance-zero' : item.balance < 500 ? 'balance-low' : 'balance-healthy';
-        
+
         const amountLabel = item.type === 'income'           ? 'Deposit'
             : item.type === 'checkpoint'                       ? 'Synced to'
             : item.type === 'starting-balance'                 ? 'Starting'
             : 'Payment';
 
-        const editBtnHtml = (item.type !== 'starting-balance')
+        // Archive view is read-only — no edit or mark-paid buttons
+        const editBtnHtml = (!isArchiveView && item.type !== 'starting-balance')
             ? `<button class="btn-edit-inline" data-id="${item.id}" data-type="${item.type}" title="Edit entry">Edit</button>`
             : '';
 
         let paidBtnHtml = '';
-        if (item.type !== 'income' && item.type !== 'starting-balance' && item.type !== 'checkpoint') {
+        if (!isArchiveView && item.type !== 'income' && item.type !== 'starting-balance' && item.type !== 'checkpoint') {
             const isPastDue = (item.day || 1) <= currentDay;
-            
+
             if (itemPaid) {
                 paidBtnHtml = `<button class="btn-mark-paid btn-mark-paid-done" data-id="${item.id}" data-autopay="${item.autoPay ? '1' : '0'}" title="Mark as unpaid">✓ Paid</button>`;
             } else if (item.autoPay) {
@@ -6773,7 +6928,7 @@ function renderPaymentPlan() {
                 <div class="schedule-amount-col ${amountClass}"><span class="col-label">${amountLabel}</span>${sign}$${item.amount.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
                 <div class="schedule-balance-col ${balClass}"><span class="col-label">Balance</span>$${item.balance.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
             </div>
-            
+
             <div class="schedule-action-col" style="display:flex; flex-direction:column; gap:0.35rem; align-items:flex-end; justify-content:center;">
                 ${paidBtnHtml}
                 ${editBtnHtml}
@@ -6782,17 +6937,17 @@ function renderPaymentPlan() {
         list.appendChild(row);
     });
 
-    const totalIncEl = _root.getElementById('payment-plan-total-income');
-    const totalExpEl = _root.getElementById('payment-plan-total-expenses');
+    const totalIncEl  = _root.getElementById('payment-plan-total-income');
+    const totalExpEl  = _root.getElementById('payment-plan-total-expenses');
     const nextMonthEl = _root.getElementById('payment-plan-next-month');
-    
+
     if (totalIncEl) totalIncEl.textContent = formatMoney(totalInc);
     if (totalExpEl) totalExpEl.textContent = formatMoney(totalExpenses);
     if (nextMonthEl) {
         nextMonthEl.textContent = formatMoney(cashPool);
-        nextMonthEl.style.color = cashPool < 0 ? 'var(--danger-color)' : 'var(--text-primary)'; 
+        nextMonthEl.style.color = cashPool < 0 ? 'var(--danger-color)' : 'var(--text-primary)';
     }
-    return schedule;
+    return isArchiveView ? null : schedule;
 }
 
 // ─── Countdown Timer ─────────────────────────────────────────────────────────
