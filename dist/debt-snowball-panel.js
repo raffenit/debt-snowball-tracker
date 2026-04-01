@@ -3390,7 +3390,13 @@ const PANEL_HTML = `<div class="app-container">
         <main class="main-content">
 
             <div class="tab-panel active" id="tab-payment-plan">
-                
+
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; gap:0.5rem;">
+                    <button id="plan-prev-month-btn" class="btn btn-secondary" style="padding:0.3rem 0.7rem; font-size:0.8rem; white-space:nowrap; visibility:hidden;">← Previous</button>
+                    <h2 id="payment-plan-month-title" style="margin:0; text-align:center; flex:1;"></h2>
+                    <button id="plan-next-month-btn" class="btn btn-primary" style="padding:0.3rem 0.7rem; font-size:0.8rem; white-space:nowrap; visibility:hidden;">Current Month →</button>
+                </div>
+
                 <section id="bank-balances-card" class="card" style="margin-bottom: 1.5rem;">
                     <div style="margin-bottom: 0.75rem;">
                         <h2 style="margin-bottom: 0;">Bank Balances</h2>
@@ -3408,12 +3414,6 @@ const PANEL_HTML = `<div class="app-container">
                 <section id="payment-plan-section" class="card" style="display: none; margin-bottom: 1.5rem;">
                     <div class="section-header" style="margin-bottom: 1rem; align-items: flex-start;">
                         <div style="width: 100%;">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; gap:0.5rem;">
-                                <button id="plan-prev-month-btn" class="btn btn-secondary" style="padding:0.3rem 0.7rem; font-size:0.8rem; white-space:nowrap; visibility:hidden;">← Previous</button>
-                                <h2 id="payment-plan-month-title" style="margin:0; text-align:center; font-size:clamp(0.95rem,3vw,1.35rem); flex:1;">Payment Plan</h2>
-                                <button id="plan-next-month-btn" class="btn btn-primary" style="padding:0.3rem 0.7rem; font-size:0.8rem; white-space:nowrap; visibility:hidden;">Current Month →</button>
-                            </div>
-                            
                             <div class="forecast-bar" id="runway-dashboard">
                                 <div class="forecast-item">
                                     <span class="forecast-label">Next Income:</span>
