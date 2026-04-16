@@ -1027,6 +1027,17 @@ debt-snowball-panel .tab-panel.active .stat-box:nth-child(4) { animation-delay: 
     background: linear-gradient(160deg, rgba(99, 102, 241, 0.08) 0%, var(--card-bg) 60%) !important;
 }
 
+/* One-Time cost variant — red accent */
+.cost-card-onetime {
+    border-left-color: #f87171 !important;
+    background: linear-gradient(160deg, rgba(239, 68, 68, 0.08) 0%, var(--card-bg) 60%) !important;
+}
+
+.cost-card-onetime:hover {
+    border-color: #f87171 !important;
+    box-shadow: 0 10px 20px -4px rgba(239, 68, 68, 0.18) !important;
+}
+
 .cost-card-credit:hover {
     border-color: #818cf8 !important;
     box-shadow: 0 10px 20px -4px rgba(99, 102, 241, 0.2) !important;
@@ -3455,56 +3466,91 @@ const PANEL_HTML = `<div class="app-container">
                     <button id="plan-next-month-btn" class="btn btn-primary" style="padding:0.3rem 0.7rem; font-size:0.8rem; white-space:nowrap; visibility:hidden;">Current Month →</button>
                 </div>
 
-                <section id="bank-balances-card" class="card" style="margin-bottom: 1.5rem;">
-                    <div style="margin-bottom: 0.75rem;">
-                        <h2 style="margin-bottom: 0;">Bank Balances</h2>
-                        <p class="subtitle" style="margin-bottom:0; font-size: 0.85rem;">Set your day 1 balance, and add mid-month checkpoints to sync the app with reality.</p>
+                <section id="balance-checkpoints-card" class="card" style="margin-bottom: 1.5rem;">
+                    <div style="margin-bottom: 1rem;">
+                        <h2 style="margin-bottom: 0.25rem;">💰 Cash Position</h2>
+                        <p class="subtitle" style="margin-bottom:0; font-size: 0.85rem;">Track your bank balance throughout the month to keep the plan accurate.</p>
                     </div>
-                    <div class="input-group" style="margin-bottom: 0.75rem;">
-                        <input type="number" id="starting-bank-balance" min="0" step="0.01" placeholder="e.g. 1200" style="font-size: 1.25rem; font-weight: 600; color: var(--success-color);">
+
+                    <!-- Day 1 Starting Balance -->
+                    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; padding: 0.75rem; background: rgba(99,102,241,0.06); border-radius: 8px; border: 1px solid rgba(99,102,241,0.2);">
+                        <span style="font-size: 0.875rem; color: var(--text-secondary); white-space: nowrap;">Day 1 Balance:</span>
+                        <input type="number" id="starting-bank-balance" min="0" step="0.01" placeholder="e.g. 1200"
+                            style="flex: 1; font-size: 1rem; font-weight: 600; color: var(--success-color); background: transparent; border: none; padding: 0;">
                     </div>
-                    <div style="display: flex; gap: 0.625rem;">
-                        <button id="add-checkpoint-btn" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">+ Add Checkpoint</button>
-                        <button id="update-plan-btn" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">↻ Update Plan</button>
+
+                    <!-- Existing Checkpoints List -->
+                    <div id="checkpoints-list" style="margin-bottom: 1rem;"></div>
+
+                    <!-- Add New Checkpoint -->
+                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                        <span style="font-size: 0.875rem; color: var(--text-secondary);">Add checkpoint on day</span>
+                        <select id="new-checkpoint-day" style="width: 65px; padding: 0.4rem; font-size: 0.875rem; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);">
+                            ${Array.from({length: 31}, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('')}
+                        </select>
+                        <span style="font-size: 0.875rem; color: var(--text-secondary);">for</span>
+                        <input type="number" id="new-checkpoint-amount" min="0" step="0.01" placeholder="Amount"
+                            style="width: 100px; padding: 0.4rem; font-size: 0.875rem; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);">
+                        <button id="add-checkpoint-btn" class="btn btn-secondary" style="padding: 0.4rem 0.75rem; font-size: 0.8rem; white-space: nowrap;">+ Add</button>
                     </div>
                 </section>
 
                 <section id="payment-plan-section" class="card" style="display: none; margin-bottom: 1.5rem;">
-                    <div class="section-header" style="margin-bottom: 1rem; align-items: flex-start;">
-                        <div style="width: 100%;">
-                            <div class="forecast-bar" id="runway-dashboard">
-                                <div class="forecast-item">
-                                    <span class="forecast-label">Next Income:</span>
-                                    <span id="runway-next-paycheck" class="forecast-value">-</span>
-                                </div>
-                                <div class="forecast-item">
-                                    <span class="forecast-label">Lowest Balance Before Income:</span>
-                                    <span id="runway-min-project" class="forecast-value">$0.00</span>
-                                </div>
-                                <div class="forecast-item">
-                                    <span class="forecast-label">Status:</span>
-                                    <span id="runway-status" class="forecast-value">Safe</span>
-                                </div>
+                    <!-- Month Overview Dashboard (at top) -->
+                    <div style="margin-bottom: 1.25rem; padding: 1rem; background: linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(168,85,247,0.05) 100%); border-radius: 12px; border: 1px solid rgba(99,102,241,0.2);">
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.75rem; font-weight: 600;">📊 Month Overview</div>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr) auto; gap: 1rem;">
+                            <!-- Start Balance -->
+                            <div style="display: flex; flex-direction: column; gap: 0.2rem;">
+                                <span style="font-size: 0.7rem; color: var(--text-secondary);">Day 1 Start</span>
+                                <span id="month-overview-start" style="font-size: 1.1rem; font-weight: 600; color: var(--text-primary);">-</span>
                             </div>
-                            
+                            <!-- Income -->
+                            <div style="display: flex; flex-direction: column; gap: 0.2rem;">
+                                <span style="font-size: 0.7rem; color: var(--text-secondary);">+ Income</span>
+                                <span id="month-overview-income" style="font-size: 1.1rem; font-weight: 600; color: var(--success-color);">-</span>
+                            </div>
+                            <!-- Expenditures -->
+                            <div style="display: flex; flex-direction: column; gap: 0.2rem;">
+                                <span style="font-size: 0.7rem; color: var(--text-secondary);">− Expenses</span>
+                                <span id="month-overview-expenses" style="font-size: 1.1rem; font-weight: 600; color: var(--expense-color);">-</span>
+                            </div>
+                        </div>
+                        <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid rgba(99,102,241,0.15); display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <!-- Next Month Start -->
+                            <div style="display: flex; flex-direction: column; gap: 0.2rem;">
+                                <span style="font-size: 0.7rem; color: var(--text-secondary);">= Next Month Start</span>
+                                <span id="month-overview-next-start" style="font-size: 1.2rem; font-weight: 700; color: var(--primary-light);">-</span>
+                            </div>
+                            <!-- Buffer -->
+                            <div style="display: flex; flex-direction: column; gap: 0.2rem;">
+                                <span style="font-size: 0.7rem; color: var(--text-secondary);">🛡️ Buffer (before 1st paycheck)</span>
+                                <span id="month-overview-buffer" style="font-size: 1.2rem; font-weight: 700; color: var(--success-color);">-</span>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- Runway Dashboard -->
+                    <div style="margin-bottom: 1rem;">
+                        <div class="forecast-bar" id="runway-dashboard" style="padding: 0.75rem; background: rgba(7,6,26,0.4); border-radius: 8px;">
+                            <div class="forecast-item">
+                                <span class="forecast-label">Next Paycheck:</span>
+                                <span id="runway-next-paycheck" class="forecast-value">-</span>
+                            </div>
+                            <div class="forecast-item">
+                                <span class="forecast-label">Lowest Balance:</span>
+                                <span id="runway-min-project" class="forecast-value">$0.00</span>
+                            </div>
+                            <div class="forecast-item">
+                                <span class="forecast-label">Status:</span>
+                                <span id="runway-status" class="forecast-value">Safe</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Schedule List -->
                     <div id="payment-plan-list" class="payment-schedule">
                         </div>
-                    <div style="margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border-color); display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; font-weight: 600; font-size: 1.25rem;">
-                        <div style="display: flex; flex-direction: column; gap: 0.25rem; min-width: 0;">
-                            <span style="font-size: 0.72rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Total Income</span>
-                            <span id="payment-plan-total-income" style="color: var(--success-color); font-size: clamp(0.95rem, 3vw, 1.25rem); word-break: break-all;">-</span>
-                        </div>
-                        <div style="display: flex; flex-direction: column; align-items: center; gap: 0.25rem; min-width: 0;">
-                            <span style="font-size: 0.72rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Total Expenses</span>
-                            <span id="payment-plan-total-expenses" style="color: var(--expense-color); font-size: clamp(0.95rem, 3vw, 1.25rem); word-break: break-all;">-</span>
-                        </div>
-                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem; min-width: 0;">
-                            <span style="font-size: 0.72rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Next Month Start</span>
-                            <span id="payment-plan-next-month" style="color: var(--text-primary); font-size: clamp(0.95rem, 3vw, 1.25rem); word-break: break-all;">-</span>
-                        </div>
-                    </div>
                     </section>
             </div>
 
@@ -3528,10 +3574,15 @@ const PANEL_HTML = `<div class="app-container">
                 <section class="recurring-section">
                     <div class="section-header">
                         <div>
-                            <h2>Recurring Costs</h2>
-                            <p class="subtitle" style="margin-bottom:0;">Bills grouped by category. <strong>One-Time</strong> costs are cleared at month end. <strong>Direct</strong> reduces your cash budget; <strong>Card</strong> does not.</p>
+                            <h2>Monthly Bills & Expenses</h2>
+                            <p class="subtitle" style="margin-bottom:0;">
+                                <strong>Monthly</strong> = Every month · 
+                                <strong>Quarterly</strong> = Every 3 months · 
+                                <strong>Annual</strong> = Once per year · 
+                                <strong style="color:var(--danger-color);">One-Time</strong> = This month only (deleted next month)
+                            </p>
                         </div>
-                        <button id="add-cost-btn" class="btn btn-warning">+ Add Cost</button>
+                        <button id="add-cost-btn" class="btn btn-warning">+ Add Bill/Expense</button>
                     </div>
                     <div id="recurring-summary" class="recurring-due-summary"></div>
                     <div id="costs-list" class="debts-list">
@@ -3621,33 +3672,6 @@ const PANEL_HTML = `<div class="app-container">
         </main>
     </div>
 
-    <div id="checkpoint-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="checkpoint-modal-title">Add Balance Checkpoint</h3>
-                <button class="close-modal close-checkpoint-modal">&times;</button>
-            </div>
-            <form id="checkpoint-form">
-                <input type="hidden" id="checkpoint-id">
-                <div class="input-group">
-                    <label for="checkpoint-day">Day of Month (1–31)</label>
-                    <input type="number" id="checkpoint-day" min="1" max="31" step="1" required placeholder="e.g. 15">
-                </div>
-                <div class="input-group">
-                    <label for="checkpoint-amount">Actual Bank Balance ($)</label>
-                    <input type="number" id="checkpoint-amount" min="0" step="0.01" required placeholder="e.g. 850.50">
-                </div>
-                <div class="modal-actions" style="justify-content: space-between;">
-                    <button type="button" class="btn btn-danger" id="delete-checkpoint-btn" style="display:none;">Delete</button>
-                    <div style="display:flex; gap:0.75rem;">
-                        <button type="button" class="btn btn-secondary close-checkpoint-modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Save Checkpoint</button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <div id="debt-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -3733,27 +3757,28 @@ const PANEL_HTML = `<div class="app-container">
             <form id="cost-form">
                 <input type="hidden" id="cost-id">
                 <div class="input-group">
-                    <label for="cost-category">Category</label>
+                    <label for="cost-category">Bill Category</label>
                     <select id="cost-category">
-                        <option value="utility">Utility</option>
-                        <option value="subscription">Subscription</option>
-                        <option value="other">Other (Recurring)</option>
-                        <option value="one-time">One-Time (This Month Only)</option>
+                        <option value="utility">⚡ Utility (Electric, Water, Gas, Internet)</option>
+                        <option value="subscription">📱 Subscription (Streaming, Services)</option>
+                        <option value="other">📦 Other Recurring Bill</option>
+                        <option value="one-time">🔴 ONE-TIME ONLY — This Month Only (No Repeat)</option>
                     </select>
+                    <p class="subtitle" id="category-hint" style="margin-top:0.3rem; margin-bottom:0; font-size:0.8rem; color: var(--text-secondary);">Choose 'ONE-TIME' for expenses that happen just once this month.</p>
                 </div>
                 <div class="input-group">
                     <label for="cost-name">Name</label>
                     <input type="text" id="cost-name" required placeholder="e.g. Electric Bill">
                 </div>
                 <div class="input-group" id="cost-interval-group">
-                    <label for="cost-interval">Recurrence</label>
+                    <label for="cost-interval">How Often Does This Bill Repeat?</label>
                     <select id="cost-interval">
-                        <option value="1">Monthly</option>
-                        <option value="2">Every 2 Months</option>
-                        <option value="3">Quarterly (Every 3 Months)</option>
-                        <option value="6">Semi-Annual (Every 6 Months)</option>
-                        <option value="12">Annual (Every 12 Months)</option>
-                        <option value="custom">Custom Interval...</option>
+                        <option value="1">📅 Every Month (Monthly)</option>
+                        <option value="2">📅 Every 2 Months</option>
+                        <option value="3">📅 Quarterly (Every 3 Months)</option>
+                        <option value="6">📅 Semi-Annual (Every 6 Months)</option>
+                        <option value="12">📅 Annual (Once Per Year)</option>
+                        <option value="custom">⚙️ Custom Interval...</option>
                     </select>
                 </div>
                 <div class="input-group" id="cost-interval-custom-group" style="display:none;">
@@ -4078,11 +4103,9 @@ const addIncomeBtn          = _root.getElementById('add-income-btn');
 const debtModal             = _root.getElementById('debt-modal');
 const costModal             = _root.getElementById('cost-modal');
 const incomeModal           = _root.getElementById('income-modal');
-const checkpointModal       = _root.getElementById('checkpoint-modal');
 const debtForm              = _root.getElementById('debt-form');
 const costForm              = _root.getElementById('cost-form');
 const incomeForm            = _root.getElementById('income-form');
-const checkpointForm        = _root.getElementById('checkpoint-form');
 const exportBtn             = _root.getElementById('export-btn');
 const importFileInput       = _root.getElementById('import-file');
 const windfallModal         = _root.getElementById('windfall-modal');
@@ -4727,40 +4750,80 @@ function setupEventListeners() {
         }
     });
 
-    _root.getElementById('add-checkpoint-btn').addEventListener('click', () => openCheckpointModal());
-    _root.getElementById('update-plan-btn').addEventListener('click',    () => renderUI());
-
     _root.querySelectorAll('.close-debt-modal').forEach(b       => b.addEventListener('click', closeDebtModal));
     _root.querySelectorAll('.close-cost-modal').forEach(b       => b.addEventListener('click', closeCostModal));
     _root.querySelectorAll('.close-income-modal').forEach(b     => b.addEventListener('click', closeIncomeModal));
-    _root.querySelectorAll('.close-checkpoint-modal').forEach(b => b.addEventListener('click', closeCheckpointModal));
 
     debtForm.addEventListener('submit',       e => { e.preventDefault(); saveDebt(); });
     costForm.addEventListener('submit',       e => { e.preventDefault(); saveCost(); });
     incomeForm.addEventListener('submit',     e => { e.preventDefault(); saveIncome(); });
-    checkpointForm.addEventListener('submit', e => { e.preventDefault(); saveCheckpoint(); });
 
     exportBtn.addEventListener('click', exportData);
     importFileInput.addEventListener('change', importData);
 
+    // Starting balance with debounced auto-save
+    let balanceSaveTimeout;
     const startingBalanceInput = _root.getElementById('starting-bank-balance');
     if (startingBalanceInput) {
         startingBalanceInput.value = startingBalance.toFixed(2);
         startingBalanceInput.addEventListener('input', () => {
             const value = parseFloat(startingBalanceInput.value);
             startingBalance = Number.isFinite(value) ? value : 0;
-            saveData().catch(err => console.error("Debt Snowball: save failed —", err));
+            clearTimeout(balanceSaveTimeout);
+            balanceSaveTimeout = setTimeout(() => {
+                saveData().then(() => {
+                    renderUI();
+                    showSavedToast('Balance updated ✓');
+                }).catch(err => console.error("Debt Snowball: save failed —", err));
+            }, 500);
         });
     }
 
-    // Checkpoints delete listener
-    _root.getElementById('delete-checkpoint-btn').addEventListener('click', () => {
-        const id = _root.getElementById('checkpoint-id').value;
-        if (id) {
+    // Add new checkpoint inline form
+    _root.getElementById('add-checkpoint-btn').addEventListener('click', () => {
+        const dayInput = _root.getElementById('new-checkpoint-day');
+        const amountInput = _root.getElementById('new-checkpoint-amount');
+        const day = parseInt(dayInput.value);
+        const amount = parseFloat(amountInput.value);
+
+        if (!day || !Number.isFinite(amount) || amount < 0) {
+            showErrorToast('Please enter a valid day and amount');
+            return;
+        }
+
+        // Check for duplicate day
+        if (checkpoints.some(cp => cp.day === day)) {
+            showErrorToast(`A checkpoint for day ${day} already exists`);
+            return;
+        }
+
+        const newCheckpoint = {
+            id: 'cp_' + Date.now(),
+            day,
+            amount
+        };
+        checkpoints.push(newCheckpoint);
+        checkpoints.sort((a, b) => a.day - b.day);
+
+        saveData().then(() => {
+            renderCheckpointsList();
+            renderUI();
+            amountInput.value = '';
+            showSavedToast('Checkpoint added ✓');
+        }).catch(err => console.error("Debt Snowball: save failed —", err));
+    });
+
+    // Delete checkpoint handler (delegated)
+    _root.getElementById('checkpoints-list').addEventListener('click', (e) => {
+        const deleteBtn = e.target.closest('.delete-checkpoint-btn');
+        if (deleteBtn) {
+            const id = deleteBtn.dataset.id;
             checkpoints = checkpoints.filter(c => c.id !== id);
-            saveData().catch(err => console.error("Debt Snowball: save failed —", err));
-            closeCheckpointModal();
-            showSavedToast('Checkpoint removed ✓');
+            saveData().then(() => {
+                renderCheckpointsList();
+                renderUI();
+                showSavedToast('Checkpoint removed ✓');
+            }).catch(err => console.error("Debt Snowball: save failed —", err));
         }
     });
 
@@ -4841,7 +4904,6 @@ function setupEventListeners() {
             if (type === 'debt') openDebtModal(id);
             else if (type === 'recurring') openCostModal(id);
             else if (type === 'income') openIncomeModal(id);
-            else if (type === 'checkpoint') openCheckpointModal(id);
             return;
         }
 
@@ -4879,13 +4941,12 @@ function setupEventListeners() {
     });
 
     // Backdrop + Escape
-    [debtModal, costModal, incomeModal, checkpointModal].forEach(modal => {
+    [debtModal, costModal, incomeModal].forEach(modal => {
         modal.addEventListener('click', e => {
             if (e.target === modal) {
                 if (modal === debtModal)      closeDebtModal();
                 else if (modal === costModal) closeCostModal();
                 else if (modal === incomeModal) closeIncomeModal();
-                else                          closeCheckpointModal();
             }
         });
     });
@@ -4895,10 +4956,9 @@ function setupEventListeners() {
             if (debtModal.classList.contains('active'))    closeDebtModal();
             else if (costModal.classList.contains('active'))   closeCostModal();
             else if (incomeModal.classList.contains('active')) closeIncomeModal();
-            else if (checkpointModal.classList.contains('active')) closeCheckpointModal();
         }
         if (e.key === 'Tab') {
-            const active = [debtModal, costModal, incomeModal, checkpointModal].find(m => m.classList.contains('active'));
+            const active = [debtModal, costModal, incomeModal].find(m => m.classList.contains('active'));
             if (!active) return;
             const focusable = active.querySelectorAll('button, input, select, textarea, [tabindex]:not([tabindex="-1")');
             if(focusable.length > 0) {
@@ -4952,57 +5012,46 @@ function autoCalcMinPayment() {
     }
 }
 
-// ─── Checkpoint Modal ────────────────────────────────────────────────────────
-function openCheckpointModal(id = null) {
-    checkpointForm.reset();
-    _root.getElementById('checkpoint-id').value = '';
-    _root.getElementById('delete-checkpoint-btn').style.display = 'none';
+// ─── Checkpoints List Rendering ───────────────────────────────────────────────
+function renderCheckpointsList() {
+    const container = _root.getElementById('checkpoints-list');
+    if (!container) return;
 
-    if (id) {
-        _root.getElementById('checkpoint-modal-title').textContent = 'Edit Checkpoint';
-        const cp = checkpoints.find(c => c.id === id);
-        if (cp) {
-            _root.getElementById('checkpoint-id').value = cp.id;
-            _root.getElementById('checkpoint-day').value = cp.day;
-            _root.getElementById('checkpoint-amount').value = cp.amount;
-            _root.getElementById('delete-checkpoint-btn').style.display = 'block';
-        }
-    } else {
-        _root.getElementById('checkpoint-modal-title').textContent = 'Add Balance Checkpoint';
+    if (checkpoints.length === 0) {
+        container.innerHTML = '';
+        return;
     }
 
-    checkpointModal.style.display = 'flex';
-    void checkpointModal.offsetWidth;
-    checkpointModal.classList.add('active');
-    setTimeout(() => _root.getElementById('checkpoint-day').focus(), 50);
-}
+    // Sort by day
+    const sorted = [...checkpoints].sort((a, b) => a.day - b.day);
 
-function closeCheckpointModal() {
-    checkpointModal.classList.remove('active');
-    setTimeout(() => { checkpointModal.style.display = 'none'; }, 300);
-}
+    const formatMoneyLocal = (n) => {
+        const currency = _root._currency || 'USD';
+        const locale = _root._locale || 'en-US';
+        return new Intl.NumberFormat(locale, {
+            style: 'currency',
+            currency: currency,
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        }).format(n);
+    };
 
-async function saveCheckpoint() {
-    try {
-        const id     = _root.getElementById('checkpoint-id').value;
-        const day    = parseInt(_root.getElementById('checkpoint-day').value);
-        const amount = parseFloat(_root.getElementById('checkpoint-amount').value);
+    const listHtml = sorted.map(cp => `
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.75rem; margin-bottom: 0.5rem; background: rgba(168,85,247,0.06); border-radius: 6px; border: 1px solid rgba(168,85,247,0.2);">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-size: 0.75rem; color: var(--text-secondary); background: rgba(168,85,247,0.15); padding: 0.2rem 0.4rem; border-radius: 4px;">Day ${cp.day}</span>
+                <span style="font-weight: 500; color: var(--text-primary);">${formatMoneyLocal(cp.amount)}</span>
+            </div>
+            <button class="btn btn-icon delete-checkpoint-btn" data-id="${cp.id}" title="Remove checkpoint" style="padding: 0.25rem; font-size: 0.75rem; background: transparent; color: var(--danger-color); border: none; cursor: pointer;">
+                ✕
+            </button>
+        </div>
+    `).join('');
 
-        if (isNaN(day) || day < 1 || day > 31) throw new Error('Please enter a valid day of the month (1-31).');
-        if (isNaN(amount)) throw new Error('Please enter a valid amount.');
-
-        if (id) {
-            const idx = checkpoints.findIndex(c => c.id === id);
-            if (idx !== -1) checkpoints[idx] = { id, day, amount };
-        } else {
-            checkpoints.push({ id: Date.now().toString(), day, amount });
-        }
-
-        await saveData();
-        location.reload();
-    } catch (err) {
-        showErrorToast(err.message || 'Failed to save checkpoint.');
-    }
+    container.innerHTML = `
+        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Mid-month checkpoints:</div>
+        ${listHtml}
+    `;
 }
 
 
@@ -5907,6 +5956,9 @@ function renderUI() {
         startingBalanceInput.value = startingBalance.toFixed(2);
     }
 
+    // Render checkpoints list
+    renderCheckpointsList();
+
     _root.querySelectorAll('.strategy-btn').forEach(b => {
         b.classList.toggle('active', b.dataset.strategy === strategy);
     });
@@ -6037,10 +6089,10 @@ function renderRecurringCostsList() {
     const currentDay = new Date().getDate();
 
     const categories = [
-        { key: 'utility',      label: '⚡ Utilities',              cls: 'cost-subsection-utility' },
-        { key: 'subscription', label: '📱 Subscriptions',          cls: 'cost-subsection-subscription' },
-        { key: 'other',        label: '📦 Other',                   cls: 'cost-subsection-other' },
-        { key: 'one-time',     label: '🗓 One-Time (This Month)',   cls: 'cost-subsection-onetime' },
+        { key: 'utility',      label: '⚡ Utilities (Monthly Bills)',              cls: 'cost-subsection-utility' },
+        { key: 'subscription', label: '📱 Subscriptions (Recurring Services)',    cls: 'cost-subsection-subscription' },
+        { key: 'other',        label: '📦 Other Recurring Bills',                  cls: 'cost-subsection-other' },
+        { key: 'one-time',     label: '🔴 ONE-TIME EXPENSES (This Month Only)',   cls: 'cost-subsection-onetime' },
     ];
 
     let cardIndex = 0;
@@ -6090,12 +6142,28 @@ function renderRecurringCostsList() {
                 const amountTypeBadge = (cost.amountType || 'fixed') === 'flexible'
                     ? '<span class="amount-type-badge flexible-badge">〜 Flexible</span>'
                     : '';
-                const intBadge    = (intN > 1 && !isOneTime) ? `<span class="interval-badge">${intervalLabel(intN)}</span>` : '';
+                // Frequency badge - more prominent
+                let freqBadge;
+                if (isOneTime) {
+                    freqBadge = '<span class="interval-badge" style="background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);">🔴 ONE-TIME</span>';
+                } else if (intN > 1) {
+                    freqBadge = `<span class="interval-badge">${intervalLabel(intN)}</span>`;
+                } else {
+                    freqBadge = '<span class="interval-badge" style="background:rgba(99,102,241,0.1);color:var(--primary-light);border:1px solid rgba(99,102,241,0.25);">📅 Monthly</span>';
+                }
                 const notDueBadge = (!isDue && intN > 1)
                     ? `<span class="not-due-badge">Next: ${formatMonthLabel(cost.nextDueMonth)}</span>` : '';
                 const autoBadge   = (!isOneTime && cost.autoPay) ? '<span class="autopay-badge">⚡ Auto-Pay</span>' : '';
                 const paidOverlay = paidState ? buildPaidOverlay(cost.autoPay) : '';
-                const dueFreq     = isOneTime ? '' : intN > 1 ? intervalLabel(intN).replace('📆 ', '') : 'Monthly';
+                // Due frequency text
+                let dueFreq;
+                if (isOneTime) {
+                    dueFreq = 'One-Time Only';
+                } else if (intN > 1) {
+                    dueFreq = intervalLabel(intN).replace('📆 ', '');
+                } else {
+                    dueFreq = 'Monthly';
+                }
 
                 const el = document.createElement('div');
                 el.style.animation = `cardReveal 0.45s cubic-bezier(0.16, 1, 0.3, 1) backwards ${cardIndex * 0.08}s`;
@@ -6106,8 +6174,8 @@ function renderRecurringCostsList() {
                         (isCard ? ' cost-card-credit' : ' cost-card-direct') +
                         (paidState ? ' card-paid' : '') +
                         (isDue ? '' : ' not-due-month');
-                    const badgesHtml = [paymentMethodBadge, amountTypeBadge, intBadge, autoBadge, notDueBadge].filter(Boolean).join('');
-                    const metaParts  = [`Due ${formatOrdinal(cost.dueDay || 1)}`, dueFreq !== 'Monthly' ? dueFreq : ''].filter(Boolean);
+                    const badgesHtml = [freqBadge, paymentMethodBadge, amountTypeBadge, autoBadge, notDueBadge].filter(Boolean).join('');
+                    const metaParts  = [`Due ${formatOrdinal(cost.dueDay || 1)}`, `Repeats: ${dueFreq}`].filter(Boolean);
                     el.innerHTML = `
                         ${paidOverlay}
                         <div class="cost-compact-body">
@@ -6131,12 +6199,12 @@ function renderRecurringCostsList() {
                     el.className = 'debt-card cost-card' +
                         (isCard ? ' cost-card-credit' : ' cost-card-direct') +
                         (paidState ? ' card-paid' : '') +
-                        (isDue ? '' : ' not-due-month');
-                    const recurringBadge = isOneTime ? '' : '<span class="recurring-badge">♻ Recurring</span>';
-                    const badgesHtml = [recurringBadge, paymentMethodBadge, amountTypeBadge, intBadge, autoBadge, notDueBadge].filter(Boolean).join('');
-                    const amountLabel = (isOneTime || intN > 1) ? 'Amount' : 'Monthly Amount';
+                        (isDue ? '' : ' not-due-month') +
+                        (isOneTime ? ' cost-card-onetime' : '');
+                    const badgesHtml = [freqBadge, paymentMethodBadge, amountTypeBadge, autoBadge, notDueBadge].filter(Boolean).join('');
+                    const amountLabel = isOneTime ? 'One-Time Amount' : (intN > 1 ? 'Amount' : 'Monthly Amount');
                     const paymentMethodLabel = isCard ? 'Credit / Debit Card' : 'Direct Pay (Bank / Cash)';
-                    const dueValue = dueFreq ? `${formatOrdinal(cost.dueDay||1)} — ${dueFreq}` : formatOrdinal(cost.dueDay||1);
+                    const dueValue = `${formatOrdinal(cost.dueDay||1)} (${dueFreq})`;
                     el.innerHTML = `
                         ${paidOverlay}
                         <div class="debt-name">${escHtml(cost.name)}</div>
@@ -6369,11 +6437,15 @@ function getStrategyOrder(debtList, strat) {
 function runSimulation(strat) {
     const totalIncome         = incomeEntries.reduce((s,e) => s + e.amount, 0);
     const activeCosts          = recurringCosts.filter(isCostDueThisMonth);
-    const totalRecurringDirect = activeCosts.filter(c => c.paymentMethod !== 'card').reduce((s,c) => s + c.amount, 0);
-    const totalRecurringCard   = activeCosts.filter(c => c.paymentMethod === 'card').reduce((s,c) => s + c.amount, 0);
-    const totalRecurring       = activeCosts.reduce((s,c) => s + c.amount, 0);
+    // For timeline projection, exclude one-time costs from effectiveBudget calculation
+    // since they only apply to this month, not future months being simulated.
+    const monthlyCostsOnly     = activeCosts.filter(c => (c.category || 'other') !== 'one-time');
+    const totalRecurringDirect = monthlyCostsOnly.filter(c => c.paymentMethod !== 'card').reduce((s,c) => s + c.amount, 0);
+    const totalRecurringCard   = monthlyCostsOnly.filter(c => c.paymentMethod === 'card').reduce((s,c) => s + c.amount, 0);
+    const totalRecurring       = monthlyCostsOnly.reduce((s,c) => s + c.amount, 0);
     // Only direct-payment costs reduce the immediate cash available for debt payoff;
     // card-charged costs are already folded into the card's minimum payment.
+    // Note: one-time costs are excluded because timeline projects multi-month future.
     const effectiveBudget = totalIncome - totalRecurringDirect;
 
     if (debts.length === 0 || totalIncome <= 0 || effectiveBudget <= 0) {
@@ -6540,8 +6612,9 @@ function renderVisualization(simResults) {
             msg = '<strong>No Income:</strong> Add income entries to see a payoff timeline.';
         } else if ((effectiveBudget || 0) <= 0) {
             const _active              = recurringCosts.filter(isCostDueThisMonth);
-            const totalRecurringDirect = _active.filter(c => c.paymentMethod !== 'card').reduce((s,c) => s + c.amount, 0);
-            const totalRecurringCard   = _active.filter(c => c.paymentMethod === 'card').reduce((s,c) => s + c.amount, 0);
+            const _monthlyOnly         = _active.filter(c => (c.category || 'other') !== 'one-time');
+            const totalRecurringDirect = _monthlyOnly.filter(c => c.paymentMethod !== 'card').reduce((s,c) => s + c.amount, 0);
+            const totalRecurringCard   = _monthlyOnly.filter(c => c.paymentMethod === 'card').reduce((s,c) => s + c.amount, 0);
             msg = `<strong>Warning:</strong> Income (${formatMoney(totalIncome)}) is entirely consumed by direct recurring costs (${formatMoney(totalRecurringDirect)}).`
                 + (totalRecurringCard > 0 ? ` Card-charged costs (${formatMoney(totalRecurringCard)}) are excluded from the cash budget.` : '')
                 + ` Increase income or reduce direct costs to free up money for debt payoff.`;
@@ -6917,6 +6990,68 @@ function renderPaymentPlan() {
         } else {
             summaryStatus.innerHTML = '<span style="color:var(--success-color);">✓ Safe</span>';
         }
+    }
+
+    // --- Month Overview Dashboard ---
+    // Calculate month totals
+    const totalIncomeVal = _income.reduce((s, e) => s + e.amount, 0);
+    // Expenses = direct costs + debt payments (exclude card charges as they don't affect cash)
+    const totalDirectCosts = _costs
+        .filter(c => isCostDueInMonth(c, _monthKey) && c.paymentMethod !== 'card')
+        .reduce((s, c) => s + c.amount, 0);
+    const totalDebtPayments = sortedDebts
+        .reduce((s, d) => s + (_overrides[d.id] ?? d.minPayment), 0);
+    const totalExpensesVal = totalDirectCosts + totalDebtPayments;
+
+    // Next month start = Day 1 balance + all income - all cash expenses
+    // If there are checkpoints, use the last checkpoint's balance as the base
+    const lastCheckpoint = _checkpoints.length > 0
+        ? [..._checkpoints].sort((a, b) => b.day - a.day)[0]
+        : null;
+
+    // Calculate final balance through the schedule
+    const finalBalance = schedule.length > 0
+        ? schedule[schedule.length - 1].balance
+        : _startBal;
+
+    // Buffer = cash available before first income of NEXT month
+    // Find first income date of next month
+    const nextMonthKey = addMonthsToKey(_monthKey, 1);
+    const nextMonthFirstDay = new Date(nextMonthKey.split('-')[0], parseInt(nextMonthKey.split('-')[1]), 1);
+
+    // Get income entries that would appear in next month
+    const nextMonthIncome = generateRecurringIncomeForMonth(_income, nextMonthKey);
+    const firstNextMonthIncome = nextMonthIncome.length > 0
+        ? [...nextMonthIncome].sort((a, b) => parseInt(a.date.split('-')[2]) - parseInt(b.date.split('-')[2]))[0]
+        : null;
+
+    // Buffer = final balance of this month (this is what carries over)
+    const bufferAmount = finalBalance;
+
+    // Populate Month Overview
+    const ovStart = _root.getElementById('month-overview-start');
+    const ovIncome = _root.getElementById('month-overview-income');
+    const ovExpenses = _root.getElementById('month-overview-expenses');
+    const ovNextStart = _root.getElementById('month-overview-next-start');
+    const ovBuffer = _root.getElementById('month-overview-buffer');
+
+    if (ovStart) ovStart.textContent = formatMoney(_startBal);
+    if (ovIncome) ovIncome.textContent = formatMoney(totalIncomeVal);
+    if (ovExpenses) ovExpenses.textContent = formatMoney(totalExpensesVal);
+    if (ovNextStart) ovNextStart.textContent = formatMoney(finalBalance);
+
+    if (ovBuffer) {
+        // Color-code the buffer
+        let bufferColor = 'var(--success-color)';
+        let bufferIcon = '🛡️';
+        if (bufferAmount < 0) {
+            bufferColor = 'var(--danger-color)';
+            bufferIcon = '⚠️';
+        } else if (bufferAmount < 100) {
+            bufferColor = 'var(--warning-color)';
+            bufferIcon = '⚡';
+        }
+        ovBuffer.innerHTML = `<span style="color:${bufferColor};">${bufferIcon} ${formatMoney(bufferAmount)}</span>`;
     }
 
     section.style.display = 'block';

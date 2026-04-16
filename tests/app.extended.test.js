@@ -81,6 +81,19 @@ describe('card-charged recurring costs are excluded from effectiveBudget', () =>
         assert.equal(r.valid, true);
     });
 
+    test('one-time costs are excluded from effectiveBudget in timeline simulation', () => {
+        // Without one-time cost: effectiveBudget = 1500 - 0 = 1500, minPayment = 100, valid
+        // With one-time cost of $2000: if counted, effectiveBudget would be negative
+        // But one-time costs should NOT affect timeline projection
+        setRecurringCosts([
+            { id: 'r1', name: 'Emergency', amount: 2000, dueDay: 1, paymentMethod: 'direct', category: 'one-time', addedMonth: '2026-03' },
+        ]);
+        const r = runSimulation('snowball');
+        // Timeline should remain valid because one-time costs are excluded from effectiveBudget
+        assert.equal(r.valid, true, 'timeline should be valid even with large one-time cost this month');
+        assert.equal(r.effectiveBudget, 1500, 'one-time cost should not reduce effectiveBudget');
+    });
+
     test('direct cost large enough to invalidate simulation', () => {
         // $1400 direct cost: effectiveBudget = 1500 - 1400 = 100, less than minPayment 100? No, equal. 
         // Make it exceed: $1450 direct → effectiveBudget = 50 < 100 minPayment
