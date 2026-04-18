@@ -1,6 +1,8 @@
-// Unit tests for app.js pure functions
+// Unit tests for pure logic functions (src/ modules)
 // Run with: node --test tests/app.test.js
 //
+// Tests simulation engine and utility functions - UI-independent
+// Works with both panel and card versions of the UI
 // Uses Node 22's built-in test runner (node:test) and assert — no npm deps.
 
 import { test, describe, beforeEach } from 'node:test';

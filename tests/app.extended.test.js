@@ -1,4 +1,5 @@
-// Extended tests for debt-snowball-panel.js logic
+// Extended tests for debt-snowball-card.js (Lovelace card) logic
+// Tests pure functions from src/ modules - UI-independent
 // Covers gaps not exercised by app.test.js:
 //   - card vs direct recurring cost budget separation
 //   - startingBalance accelerates first month payoff

@@ -1,7 +1,7 @@
 {
   "name": "Debt Snowball Tracker",
   "render_readme": true,
-  "filename": "debt-snowball-panel.js",
+  "filename": "debt-snowball-card.js",
   "content_in_root": false,
   "description": "A fully interactive, theme-aware, full-screen Debt Snowball and Avalanche tracker."
 }

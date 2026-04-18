@@ -16,13 +16,13 @@ Track your bank balances, manage recurring costs, visualize your payoff timeline
 
 ## 🚀 Installation (Zero YAML)
 
-This tracker installs entirely through the Home Assistant UI using HACS and Lovelace.
+This tracker installs entirely through the Home Assistant UI using HACS and Lovelace. **No `configuration.yaml` editing required!**
 
 ### Step 1: Download via HACS
 1. Open **HACS** in Home Assistant.
 2. Go to **Frontend**.
 3. Click the three dots in the top right corner and select **Custom repositories**.
-4. Add the URL to this repository and select **Dashboard** as the category.
+4. Add the URL to this repository and select **Lovelace** as the category.
 5. Click **Download** in the bottom right corner.
 6. *When prompted, reload your browser.*
 
@@ -33,6 +33,12 @@ Because this is a full-screen app, it works best on its own dedicated Dashboard.
 3. Open your new dashboard, click the **Pencil icon** in the top right to edit.
 4. Click the **Pencil icon** again next to the dashboard name and toggle **Panel Mode** ON.
 5. Click **Add Card**, search for **Debt Snowball Tracker**, and hit Save!
+
+### Migrating from the old `panel_custom` version?
+If you previously used the `panel_custom` YAML configuration:
+1. Remove the `panel_custom` entry from your `configuration.yaml`
+2. Restart Home Assistant
+3. Follow the steps above to add it as a Lovelace card
 
 ---
 

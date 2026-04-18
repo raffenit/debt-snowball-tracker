@@ -1,17 +1,17 @@
 /**
- * Debt Snowball Tracker — Home Assistant Custom Panel
- * Install via HACS or manually under /config/www/
- * Then add to configuration.yaml:
- *
- *   panel_custom:
- *     - name: debt-snowball-panel
- *       sidebar_title: Debt Snowball
- *       sidebar_icon: mdi:credit-card-minus
- *       url_path: debt-snowball
- *       module_url: /local/debt-snowball-panel.js
- *
- * Or if installed via HACS:
- *       module_url: /hacsfiles/debt-snowball-ha/debt-snowball-panel.js
+ * Debt Snowball Tracker — Home Assistant Lovelace Card
+ * 
+ * Installation via HACS (recommended):
+ *   1. Add custom repository: https://github.com/raffenit/debt-snowball-tracker
+ *   2. Install "Debt Snowball Tracker" in HACS → Frontend
+ *   3. Add card to your dashboard: Edit Dashboard → Add Card → Debt Snowball Tracker
+ *   4. For best experience: Set view type to "Panel" in the view settings
+ * 
+ * Manual installation:
+ *   1. Copy debt-snowball-card.js to /config/www/
+ *   2. Add as resource: Settings → Dashboards → Resources → Add Resource
+ *      URL: /local/debt-snowball-card.js  Type: JavaScript Module
+ *   3. Add card to dashboard
  */
 
 // Version marker - check console to verify which file is loaded
@@ -4043,16 +4043,9 @@ const PANEL_HTML = `<div class="app-container">
 
     <canvas id="confetti-canvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;display:none;"></canvas>`;
 
-class DebtSnowballPanel extends HTMLElement {
-    setConfig(config) {
-        // Lovelace requires this method to exist, even if we don't use the config
-        this.config = config;
-    }
-
-    getCardSize() {
-        // Tells Lovelace this is a large card
-        return 10;
-    }
+class DebtSnowballCard extends HTMLElement {
+    // Lovelace Card API - minimal implementation at top
+    // Full implementation at bottom of class
 
     set hass(hass) {
         // Just store the HA object and locale settings when HA pushes them
@@ -7720,15 +7713,34 @@ function initTabs() {
     }, 50);
 
   } // <-- Closes _initApp()
-} // <-- Closes the DebtSnowballPanel class
 
-customElements.define('debt-snowball-panel', DebtSnowballPanel);
+  // Lovelace Card API
+  setConfig(config) {
+    // No config needed for this card
+    this._config = config;
+  }
 
-// This registers your app in the Home Assistant UI card picker!
+  getCardSize() {
+    return 12; // Tall card - takes full height
+  }
+
+  static getConfigElement() {
+    return document.createElement('div');
+  }
+
+  static getStubConfig() {
+    return {};
+  }
+} // <-- Closes the DebtSnowballCard class
+
+customElements.define('debt-snowball-card', DebtSnowballCard);
+
+// This registers your card in the Home Assistant UI card picker!
 window.customCards = window.customCards || [];
 window.customCards.push({
-  type: "debt-snowball-panel",
+  type: "debt-snowball-card",
   name: "Debt Snowball Tracker",
-  description: "A full-screen interactive debt snowball and avalanche tracker.",
-  preview: true,
+  description: "A full-screen interactive debt snowball and avalanche tracker. Add to a 'Panel' view for best experience.",
+  preview: false,
+  documentationURL: "https://github.com/raffenit/debt-snowball-tracker"
 });
