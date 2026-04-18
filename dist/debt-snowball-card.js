@@ -68,7 +68,7 @@ body {
 }
 
 .app-container {
-    max-width: 900px;
+    max-width: 100%;
     margin: 0 auto;
     padding: 2rem 1rem;
 }
@@ -494,7 +494,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* ===== Tablet (≤ 1024px) ===== */
 @media (max-width: 1024px) {
     .app-container {
-        max-width: 100%;
         padding: 1.5rem 1.25rem;
     }
 
