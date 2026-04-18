@@ -3469,14 +3469,7 @@ const PANEL_HTML = `<div class="app-container">
                 <section id="balance-checkpoints-card" class="card" style="margin-bottom: 1.5rem;">
                     <div style="margin-bottom: 1rem;">
                         <h2 style="margin-bottom: 0.25rem;">💰 Cash Position</h2>
-                        <p class="subtitle" style="margin-bottom:0; font-size: 0.85rem;">Track your bank balance throughout the month to keep the plan accurate.</p>
-                    </div>
-
-                    <!-- Day 1 Starting Balance -->
-                    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; padding: 0.75rem; background: rgba(99,102,241,0.06); border-radius: 8px; border: 1px solid rgba(99,102,241,0.2);">
-                        <span style="font-size: 0.875rem; color: var(--text-secondary); white-space: nowrap;">Day 1 Balance:</span>
-                        <input type="number" id="starting-bank-balance" min="0" step="0.01" placeholder="e.g. 1200"
-                            style="flex: 1; font-size: 1rem; font-weight: 600; color: var(--success-color); background: transparent; border: none; padding: 0;">
+                        <p class="subtitle" style="margin-bottom:0; font-size: 0.85rem;">Track your bank balance throughout the month. Add your Day 1 balance as a checkpoint on day 1.</p>
                     </div>
 
                     <!-- Existing Checkpoints List -->
@@ -3977,6 +3970,32 @@ const PANEL_HTML = `<div class="app-container">
         </div>
     </div>
 
+    <div id="checkpoint-modal" class="modal">
+        <div class="modal-content" style="max-width:420px;">
+            <div class="modal-header">
+                <h3 id="checkpoint-modal-title">Edit Checkpoint</h3>
+                <button class="close-modal close-checkpoint-modal">&times;</button>
+            </div>
+            <form id="checkpoint-form">
+                <input type="hidden" id="checkpoint-id">
+                <div class="input-group">
+                    <label for="checkpoint-day">Day of Month</label>
+                    <select id="checkpoint-day" required style="width:100%; padding:0.6rem; font-size:0.95rem; background:var(--card-bg); border:1px solid var(--border-color); border-radius:8px; color:var(--text-primary);">
+                        ${Array.from({length: 31}, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="checkpoint-amount">Balance Amount ($)</label>
+                    <input type="number" id="checkpoint-amount" min="0" step="0.01" required placeholder="e.g. 1200">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary close-checkpoint-modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Checkpoint</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div id="checkin-modal" class="modal">
         <div class="modal-content" style="max-width:420px;">
             <div class="modal-header">
@@ -4122,6 +4141,8 @@ const budgetModal           = _root.getElementById('budget-modal');
 const budgetForm            = _root.getElementById('budget-form');
 const expenseModal          = _root.getElementById('expense-modal');
 const expenseForm           = _root.getElementById('expense-form');
+const checkpointModal       = _root.getElementById('checkpoint-modal');
+const checkpointForm        = _root.getElementById('checkpoint-form');
 
 // ─── HA Backend Data Storage ─────────────────────────────────────────────────
 // Storage mechanism: a dedicated hidden Lovelace dashboard used purely as a
@@ -4761,31 +4782,15 @@ function setupEventListeners() {
     _root.querySelectorAll('.close-debt-modal').forEach(b       => b.addEventListener('click', closeDebtModal));
     _root.querySelectorAll('.close-cost-modal').forEach(b       => b.addEventListener('click', closeCostModal));
     _root.querySelectorAll('.close-income-modal').forEach(b     => b.addEventListener('click', closeIncomeModal));
+    _root.querySelectorAll('.close-checkpoint-modal').forEach(b  => b.addEventListener('click', closeCheckpointModal));
 
     debtForm.addEventListener('submit',       e => { e.preventDefault(); saveDebt(); });
+    checkpointForm.addEventListener('submit', e => { e.preventDefault(); saveCheckpoint(); });
     costForm.addEventListener('submit',       e => { e.preventDefault(); saveCost(); });
     incomeForm.addEventListener('submit',     e => { e.preventDefault(); saveIncome(); });
 
     exportBtn.addEventListener('click', exportData);
     importFileInput.addEventListener('change', importData);
-
-    // Starting balance with debounced auto-save
-    let balanceSaveTimeout;
-    const startingBalanceInput = _root.getElementById('starting-bank-balance');
-    if (startingBalanceInput) {
-        startingBalanceInput.value = startingBalance.toFixed(2);
-        startingBalanceInput.addEventListener('input', () => {
-            const value = parseFloat(startingBalanceInput.value);
-            startingBalance = Number.isFinite(value) ? value : 0;
-            clearTimeout(balanceSaveTimeout);
-            balanceSaveTimeout = setTimeout(() => {
-                saveData().then(() => {
-                    renderUI();
-                    showSavedToast('Balance updated ✓');
-                }).catch(err => console.error("Debt Snowball: save failed —", err));
-            }, 500);
-        });
-    }
 
     // Add new checkpoint inline form
     _root.getElementById('add-checkpoint-btn').addEventListener('click', () => {
@@ -4912,6 +4917,7 @@ function setupEventListeners() {
             if (type === 'debt') openDebtModal(id);
             else if (type === 'recurring') openCostModal(id);
             else if (type === 'income') openIncomeModal(id);
+            else if (type === 'checkpoint') openCheckpointModal(id);
             return;
         }
 
@@ -4949,12 +4955,13 @@ function setupEventListeners() {
     });
 
     // Backdrop + Escape
-    [debtModal, costModal, incomeModal].forEach(modal => {
+    [debtModal, costModal, incomeModal, checkpointModal].forEach(modal => {
         modal.addEventListener('click', e => {
             if (e.target === modal) {
                 if (modal === debtModal)      closeDebtModal();
                 else if (modal === costModal) closeCostModal();
                 else if (modal === incomeModal) closeIncomeModal();
+                else if (modal === checkpointModal) closeCheckpointModal();
             }
         });
     });
@@ -4964,9 +4971,10 @@ function setupEventListeners() {
             if (debtModal.classList.contains('active'))    closeDebtModal();
             else if (costModal.classList.contains('active'))   closeCostModal();
             else if (incomeModal.classList.contains('active')) closeIncomeModal();
+            else if (checkpointModal.classList.contains('active')) closeCheckpointModal();
         }
         if (e.key === 'Tab') {
-            const active = [debtModal, costModal, incomeModal].find(m => m.classList.contains('active'));
+            const active = [debtModal, costModal, incomeModal, checkpointModal].find(m => m.classList.contains('active'));
             if (!active) return;
             const focusable = active.querySelectorAll('button, input, select, textarea, [tabindex]:not([tabindex="-1")');
             if(focusable.length > 0) {
@@ -5219,6 +5227,75 @@ function updateIncomeScheduleHint() {
 function closeIncomeModal() {
     incomeModal.classList.remove('active');
     setTimeout(() => { incomeModal.style.display = 'none'; }, 300);
+}
+
+// ─── Checkpoint Modal ────────────────────────────────────────────────────────
+function openCheckpointModal(cpId = null) {
+    checkpointForm.reset();
+    _root.getElementById('checkpoint-id').value = '';
+
+    if (cpId) {
+        _root.getElementById('checkpoint-modal-title').textContent = 'Edit Checkpoint';
+        const cp = checkpoints.find(c => c.id === cpId);
+        if (cp) {
+            _root.getElementById('checkpoint-id').value = cp.id;
+            _root.getElementById('checkpoint-day').value = cp.day;
+            _root.getElementById('checkpoint-amount').value = cp.amount.toFixed(2);
+        }
+    } else {
+        _root.getElementById('checkpoint-modal-title').textContent = 'Add Checkpoint';
+    }
+
+    checkpointModal.style.display = 'flex';
+    setTimeout(() => checkpointModal.classList.add('active'), 10);
+    setTimeout(() => _root.getElementById('checkpoint-amount').focus(), 50);
+}
+
+function closeCheckpointModal() {
+    checkpointModal.classList.remove('active');
+    setTimeout(() => { checkpointModal.style.display = 'none'; }, 300);
+}
+
+function saveCheckpoint() {
+    try {
+        const id      = _root.getElementById('checkpoint-id').value;
+        const day     = parseInt(_root.getElementById('checkpoint-day').value);
+        const amount  = parseFloat(_root.getElementById('checkpoint-amount').value);
+
+        if (!day || day < 1 || day > 31) throw new Error('Please select a valid day (1-31).');
+        if (!Number.isFinite(amount) || amount < 0) throw new Error('Please enter a valid amount.');
+
+        // Check for duplicate day (if adding new or changing day)
+        const existingSameDay = checkpoints.find(cp => cp.day === day && cp.id !== id);
+        if (existingSameDay) throw new Error(`A checkpoint for day ${day} already exists.`);
+
+        if (id) {
+            // Edit existing
+            const idx = checkpoints.findIndex(cp => cp.id === id);
+            if (idx !== -1) {
+                checkpoints[idx] = { id, day, amount };
+            }
+        } else {
+            // Add new
+            const newCp = {
+                id: 'cp_' + Date.now(),
+                day,
+                amount
+            };
+            checkpoints.push(newCp);
+        }
+
+        checkpoints.sort((a, b) => a.day - b.day);
+
+        saveData().then(() => {
+            renderCheckpointsList();
+            renderUI();
+            closeCheckpointModal();
+            showSavedToast(id ? 'Checkpoint updated ✓' : 'Checkpoint added ✓');
+        }).catch(err => console.error('Debt Snowball: save failed —', err));
+    } catch (err) {
+        showErrorToast(err.message || 'Failed to save checkpoint.');
+    }
 }
 
 // ─── CRUD: Debts ─────────────────────────────────────────────────────────────
@@ -6830,7 +6907,7 @@ function renderPaymentPlan() {
 
     list.innerHTML = '';
 
-    if (_income.length === 0 && _startBal <= 0) { section.style.display = 'none'; return; }
+    if (_income.length === 0 && _checkpoints.length === 0) { section.style.display = 'none'; return; }
 
     const events = [];
     const today = new Date();
@@ -6881,17 +6958,14 @@ function renderPaymentPlan() {
     events.sort((a,b) => a.sortKey - b.sortKey);
 
     // Date-aware scheduling with card-passthrough logic
-    let cashPool       = _startBal;
+    // Initial cash = first checkpoint on day 1, or 0 if no day 1 checkpoint
+    const day1Checkpoint = _checkpoints.find(cp => cp.day === 1);
+    let cashPool       = day1Checkpoint ? day1Checkpoint.amount : 0;
     let incomeReleased = 0;
     const incomeSorted = events.filter(e => e.type === 'income').sort((a,b) => a.day - b.day);
     const schedule     = [];
     const deferred     = [];
     let totalExpenses  = 0;
-
-    // Inject starting balance as a visible schedule row if non-zero
-    if (_startBal > 0) {
-        schedule.push({ type: 'starting-balance', name: 'Day 1 Starting Balance', day: 1, amount: _startBal, balance: cashPool, sortKey: 0 });
-    }
 
     const releaseIncomeThroughDay = (day) => {
         while (incomeReleased < incomeSorted.length && incomeSorted[incomeReleased].day <= day) {
@@ -7043,7 +7117,10 @@ function renderPaymentPlan() {
     const ovNextStart = _root.getElementById('month-overview-next-start');
     const ovBuffer = _root.getElementById('month-overview-buffer');
 
-    if (ovStart) ovStart.textContent = formatMoney(_startBal);
+    // Get day 1 checkpoint amount (or 0 if none)
+    const day1Cp = _checkpoints.find(cp => cp.day === 1);
+    const day1Amount = day1Cp ? day1Cp.amount : 0;
+    if (ovStart) ovStart.textContent = formatMoney(day1Amount);
     if (ovIncome) ovIncome.textContent = formatMoney(totalIncomeVal);
     if (ovExpenses) ovExpenses.textContent = formatMoney(totalExpensesVal);
     if (ovNextStart) ovNextStart.textContent = formatMoney(finalBalance);
@@ -7129,19 +7206,15 @@ function renderPaymentPlan() {
 
         let icon, typeBadge = '', amountClass, dayLabel, rowBgClass;
 
-        if (item.type === 'starting-balance') {
-            icon        = '🏁';
-            typeBadge   = '<span class="schedule-badge schedule-badge-start">Starting Balance</span>';
-            amountClass = 'schedule-amount-income';
-            dayLabel    = formatOrdinal(item.day || 1);
-            rowBgClass  = 'schedule-starting';
-
-        } else if (item.type === 'checkpoint') {
-            icon        = '⚖️';
-            typeBadge   = '<span class="schedule-badge schedule-badge-start" style="background:rgba(168,85,247,0.15);color:var(--promo-light);border-color:rgba(168,85,247,0.3);">Manual Sync</span>';
+        if (item.type === 'checkpoint') {
+            const isDay1 = item.day === 1;
+            icon        = isDay1 ? '🏁' : '⚖️';
+            typeBadge   = isDay1
+                ? '<span class="schedule-badge schedule-badge-start" style="background:rgba(99,102,241,0.15);color:var(--accent-color);border-color:rgba(99,102,241,0.3);">Day 1 Balance</span>'
+                : '<span class="schedule-badge schedule-badge-start" style="background:rgba(168,85,247,0.15);color:var(--promo-light);border-color:rgba(168,85,247,0.3);">Manual Sync</span>';
             amountClass = '';
             dayLabel    = formatOrdinal(item.day);
-            rowBgClass  = 'schedule-checkpoint';
+            rowBgClass  = isDay1 ? 'schedule-starting' : 'schedule-checkpoint';
 
         } else if (item.type === 'income') {
             icon        = '💵';
@@ -7199,25 +7272,24 @@ function renderPaymentPlan() {
         if (item.unpaid)   statusBadges += '<span class="schedule-badge schedule-badge-unpaid">❌ Unpaid</span>';
 
         let paidBadge = '';
-        if (item.type !== 'income' && item.type !== 'checkpoint' && item.type !== 'starting-balance') {
+        if (item.type !== 'income' && item.type !== 'checkpoint') {
             if (itemPaid) paidBadge = '<span class="schedule-badge schedule-badge-paid">✓ Paid</span>';
         }
 
-        const sign     = item.type === 'income' ? '+' : (item.type === 'checkpoint' || item.type === 'starting-balance') ? '' : '−';
+        const sign     = item.type === 'income' ? '+' : (item.type === 'checkpoint') ? '' : '−';
         const balClass = item.balance <= 0 ? 'balance-zero' : item.balance < 500 ? 'balance-low' : 'balance-healthy';
 
         const amountLabel = item.type === 'income'           ? 'Deposit'
             : item.type === 'checkpoint'                       ? 'Synced to'
-            : item.type === 'starting-balance'                 ? 'Starting'
             : 'Payment';
 
         // Archive view is read-only — no edit or mark-paid buttons
-        const editBtnHtml = (!isArchiveView && item.type !== 'starting-balance')
+        const editBtnHtml = (!isArchiveView)
             ? `<button class="btn-edit-inline" data-id="${item.id}" data-type="${item.type}" title="Edit entry">Edit</button>`
             : '';
 
         let paidBtnHtml = '';
-        if (!isArchiveView && item.type !== 'income' && item.type !== 'starting-balance' && item.type !== 'checkpoint') {
+        if (!isArchiveView && item.type !== 'income' && item.type !== 'checkpoint') {
             const isPastDue = (item.day || 1) <= currentDay;
 
             if (itemPaid) {
