@@ -30,17 +30,16 @@ console.info(`   Loaded from: ${installType} (${scriptSrc})`);
 const PANEL_CSS = `
 :host {
     display: block;
-    width: 100%;
-    height: 100%;
+    width: 100% !important;
+    height: 100% !important;
     min-height: 100vh;
+    box-sizing: border-box;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
-ha-card {
-    width: 100%;
-    height: 100%;
-    min-height: 400px;
-    display: flex;
-    flex-direction: column;
+* {
+    box-sizing: border-box;
 }
 
 :root {
@@ -68,7 +67,6 @@ ha-card {
 }
 
 * {
-    box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
@@ -77,6 +75,9 @@ debt-snowball-card {
     display: block;
     width: 100% !important;
     height: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 body {
@@ -91,11 +92,12 @@ body {
 }
 
 .app-container {
-    width: 100%;
-    max-width: 100%;
-    margin: 0;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
     padding: 2rem;
     min-height: 100vh;
+    box-sizing: border-box;
 }
 
 .header {
