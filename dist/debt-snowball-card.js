@@ -123,6 +123,31 @@ body {
     gap: 0.75rem;
 }
 
+.month-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem;
+    background: linear-gradient(135deg, rgba(91,127,255,0.08) 0%, rgba(168,85,247,0.05) 50%, rgba(91,127,255,0.08) 100%);
+    border-radius: 10px;
+    border: 1px solid rgba(91,127,255,0.15);
+}
+
+.month-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    background: linear-gradient(110deg, #a5b8ff 0%, #c084fc 50%, #a5b8ff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-transform: uppercase;
+    min-width: 140px;
+    text-align: center;
+}
+
 .btn {
     display: inline-flex;
     align-items: center;
@@ -538,6 +563,58 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     transform: scale(0.97) translateY(0);
 }
 
+/* ===== Timeline Error Card ===== */
+.timeline-error-card {
+    background: linear-gradient(145deg, rgba(244,88,122,0.08) 0%, rgba(240,160,80,0.05) 100%);
+    border: 1px solid rgba(244,88,122,0.25);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin: 1rem 0;
+    text-align: center;
+    box-shadow: 
+        0 8px 32px rgba(0,0,0,0.3),
+        0 0 0 1px rgba(255,255,255,0.02),
+        0 0 24px rgba(244,88,122,0.08) inset;
+}
+
+.timeline-error-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+    display: block;
+}
+
+.timeline-error-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+}
+
+.timeline-error-message {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 1.25rem;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.timeline-error-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.timeline-error-actions .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.6rem 1.25rem;
+    font-size: 0.875rem;
+}
+
 /* ===== Tablet (≤ 1024px) ===== */
 @media (max-width: 1024px) {
     .app-container {
@@ -623,13 +700,20 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         font-size: 0.8rem;
     }
 
-    .month-header {
-        padding: 0.625rem 0.75rem;
+    .month-nav {
+        padding: 0.375rem;
         margin-bottom: 0.625rem;
+        gap: 0.5rem;
+    }
+    
+    .month-nav .btn-sm {
+        padding: 0.35rem 0.625rem;
+        font-size: 0.75rem;
     }
 
-    .month-header h1 {
-        font-size: 1.375rem;
+    .month-title {
+        font-size: 1rem;
+        min-width: 100px;
     }
 
     .header-actions {
@@ -856,12 +940,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         padding: 0.625rem;
     }
     
-    .month-header h1 {
-        font-size: 1.125rem;
+    .month-title {
+        font-size: 0.875rem;
+        min-width: 80px;
     }
     
-    .month-header .subtitle {
-        font-size: 0.75rem;
+    .month-nav .btn-sm {
+        padding: 0.3rem 0.5rem;
+        font-size: 0.7rem;
     }
 
     .header h1 {
@@ -3699,6 +3785,12 @@ const PANEL_HTML = `<div class="app-container">
             </div>
         </header>
 
+        <div class="month-nav">
+            <button id="plan-prev-month-btn" class="btn btn-secondary btn-sm" style="visibility:hidden;">← Previous</button>
+            <div class="month-title" id="global-month-title"></div>
+            <button id="plan-next-month-btn" class="btn btn-primary btn-sm" style="visibility:hidden;">Current Month →</button>
+        </div>
+
         <nav class="tab-nav">
             <button class="tab-btn active" data-tab="payment-plan"><span class="tab-icon">&#128197;</span><span class="tab-label"> Plan</span></button>
             <button class="tab-btn" data-tab="income"><span class="tab-icon">&#128176;</span><span class="tab-label"> Budget</span></button>
@@ -3709,15 +3801,6 @@ const PANEL_HTML = `<div class="app-container">
         <main class="main-content">
 
             <div class="tab-panel active" id="tab-payment-plan">
-
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; gap:0.5rem;">
-                    <button id="plan-prev-month-btn" class="btn btn-secondary" style="padding:0.3rem 0.7rem; font-size:0.8rem; white-space:nowrap; visibility:hidden;">← Previous</button>
-                    <div class="month-header" style="flex:1; margin:0;">
-                        <h1 id="payment-plan-month-title"></h1>
-                        <div class="subtitle">Payment Plan</div>
-                    </div>
-                    <button id="plan-next-month-btn" class="btn btn-primary" style="padding:0.3rem 0.7rem; font-size:0.8rem; white-space:nowrap; visibility:hidden;">Current Month →</button>
-                </div>
 
                 <section id="balance-checkpoints-card" class="card" style="margin-bottom: 1.5rem;">
                     <div style="margin-bottom: 1rem;">
@@ -3809,11 +3892,6 @@ const PANEL_HTML = `<div class="app-container">
             </div>
 
             <div class="tab-panel" id="tab-income">
-                <div class="month-header">
-                    <h1 id="income-month-title"></h1>
-                    <div class="subtitle">Budget</div>
-                </div>
-
                 <section class="spending-budgets-section">
                     <div class="section-header">
                         <div>
@@ -3862,10 +3940,6 @@ const PANEL_HTML = `<div class="app-container">
             </div>
 
             <div class="tab-panel" id="tab-debts">
-                <div class="month-header">
-                    <h1 id="debts-month-title"></h1>
-                    <div class="subtitle">Your Debts</div>
-                </div>
                 <section class="debts-section">
                     <div class="section-header">
                         <div>
@@ -3884,10 +3958,6 @@ const PANEL_HTML = `<div class="app-container">
             </div>
 
             <div class="tab-panel" id="tab-timeline">
-                <div class="month-header">
-                    <h1 id="timeline-month-title"></h1>
-                    <div class="subtitle">Payoff Timeline</div>
-                </div>
                 <section class="visualization-section card">
                     <div class="viz-header">
                         <h2>Payoff Timeline</h2>
@@ -6965,7 +7035,15 @@ function renderVisualization(simResults) {
         statTotalInterest.textContent = '$0.00';
         statSavingsBox.style.display  = 'none';
         windfallBar.style.display     = 'none';
-        timelineChart.innerHTML       = '<div class="empty-state">Add debts to see your payoff timeline.</div>';
+        timelineChart.innerHTML = `
+            <div class="timeline-error-card">
+                <span class="timeline-error-icon">📊</span>
+                <div class="timeline-error-title">No Debts Added</div>
+                <div class="timeline-error-message">Add your credit cards, loans, and other debts to see your personalized payoff timeline and calculate your debt-free date.</div>
+                <div class="timeline-error-actions">
+                    <button class="btn btn-primary" onclick="document.querySelector('[data-tab=\"debts\"]').click()">💳 Add Your First Debt</button>
+                </div>
+            </div>`;
         renderPaydownChart([], {});
         stopCountdown();
         return;
@@ -6980,21 +7058,46 @@ function renderVisualization(simResults) {
         statSavingsBox.style.display  = 'none';
         windfallBar.style.display     = 'none';
         stopCountdown();
-        let msg = '';
+        
+        let icon = '⚠️';
+        let title = '';
+        let message = '';
+        let primaryAction = '';
+        let secondaryAction = '';
+        
         if ((totalIncome || 0) <= 0) {
-            msg = '<strong>No Income:</strong> Add income entries to see a payoff timeline.';
+            icon = '💰';
+            title = 'No Income Added';
+            message = 'You need to add income entries before we can calculate your payoff timeline. Tell us about your paychecks, deposits, or any other monthly income.';
+            primaryAction = `<button class="btn btn-success" onclick="document.querySelector('[data-tab=\"income\"]').click(); setTimeout(() => document.getElementById('add-income-btn').click(), 100)">➕ Add Income</button>`;
         } else if ((effectiveBudget || 0) <= 0) {
             const _active              = recurringCosts.filter(isCostDueThisMonth);
             const _monthlyOnly         = _active.filter(c => (c.category || 'other') !== 'one-time');
             const totalRecurringDirect = _monthlyOnly.filter(c => c.paymentMethod !== 'card').reduce((s,c) => s + c.amount, 0);
             const totalRecurringCard   = _monthlyOnly.filter(c => c.paymentMethod === 'card').reduce((s,c) => s + c.amount, 0);
-            msg = `<strong>Warning:</strong> Income (${formatMoney(totalIncome)}) is entirely consumed by direct recurring costs (${formatMoney(totalRecurringDirect)}).`
-                + (totalRecurringCard > 0 ? ` Card-charged costs (${formatMoney(totalRecurringCard)}) are excluded from the cash budget.` : '')
-                + ` Increase income or reduce direct costs to free up money for debt payoff.`;
+            icon = '📉';
+            title = 'Budget Over-Committed';
+            message = `Your income of ${formatMoney(totalIncome)} is entirely consumed by direct recurring costs of ${formatMoney(totalRecurringDirect)}.${totalRecurringCard > 0 ? ` (Card-charged costs of ${formatMoney(totalRecurringCard)} are already factored into card payments.)` : ''} You need to either increase income or reduce costs to free up money for debt payoff.`;
+            primaryAction = `<button class="btn btn-success" onclick="document.querySelector('[data-tab=\"income\"]').click()">💰 Add Income</button>`;
+            secondaryAction = `<button class="btn btn-warning" onclick="document.querySelector('[data-tab=\"income\"]').click()">📝 Review Costs</button>`;
         } else {
-            msg = `<strong>Warning:</strong> Effective budget (${formatMoney(effectiveBudget)}) is less than minimum payments (${formatMoney(totalMinPayments)}).`;
+            icon = '💳';
+            title = 'Can\'t Cover Minimum Payments';
+            message = `Your effective budget of ${formatMoney(effectiveBudget)} is less than your total minimum payments of ${formatMoney(totalMinPayments)}. You need more available cash to make progress on your debts.`;
+            primaryAction = `<button class="btn btn-success" onclick="document.querySelector('[data-tab=\"income\"]').click()">💰 Increase Income</button>`;
+            secondaryAction = `<button class="btn btn-secondary" onclick="document.querySelector('[data-tab=\"debts\"]').click()">📉 Review Debts</button>`;
         }
-        timelineChart.innerHTML = `<div class="empty-state" style="color:var(--warning-color)">${msg}</div>`;
+        
+        timelineChart.innerHTML = `
+            <div class="timeline-error-card">
+                <span class="timeline-error-icon">${icon}</span>
+                <div class="timeline-error-title">${title}</div>
+                <div class="timeline-error-message">${message}</div>
+                <div class="timeline-error-actions">
+                    ${primaryAction}
+                    ${secondaryAction}
+                </div>
+            </div>`;
         renderPaydownChart([], {});
         return;
     }
@@ -7007,7 +7110,16 @@ function renderVisualization(simResults) {
         statSavingsBox.style.display  = 'none';
         windfallBar.style.display     = 'none';
         stopCountdown();
-        timelineChart.innerHTML       = '<div class="empty-state">Debt will take over 100 years to pay off with this budget.</div>';
+        timelineChart.innerHTML = `
+            <div class="timeline-error-card">
+                <span class="timeline-error-icon">⏰</span>
+                <div class="timeline-error-title">Payoff Exceeds 100 Years</div>
+                <div class="timeline-error-message">With your current budget, these debts would take over 100 years to pay off. This usually means either the balances are very high compared to your available payoff budget, or interest rates are preventing progress.</div>
+                <div class="timeline-error-actions">
+                    <button class="btn btn-success" onclick="document.querySelector('[data-tab=\"income\"]').click()">💰 Increase Budget</button>
+                    <button class="btn btn-primary" onclick="document.querySelector('[data-tab=\"debts\"]').click()">📉 Review Debts</button>
+                </div>
+            </div>`;
         return;
     }
 
@@ -7176,18 +7288,12 @@ function renderPaymentPlan() {
     const _monthKey     = archiveData ? archiveData.month : (workingMonthKey || currentMonthKey());
 
     // ── Month title & navigation ───────────────────────────────────────────────
-    const monthTitleEl = _root.getElementById('payment-plan-month-title');
-    const incomeMonthEl = _root.getElementById('income-month-title');
-    const debtsMonthEl = _root.getElementById('debts-month-title');
-    const timelineMonthEl = _root.getElementById('timeline-month-title');
+    const monthTitleEl = _root.getElementById('global-month-title');
     const prevBtn      = _root.getElementById('plan-prev-month-btn');
     const nextBtn      = _root.getElementById('plan-next-month-btn');
 
     const monthDisplay = formatMonthLabel(_monthKey);
     if (monthTitleEl) monthTitleEl.textContent = monthDisplay;
-    if (incomeMonthEl) incomeMonthEl.textContent = monthDisplay;
-    if (debtsMonthEl) debtsMonthEl.textContent = monthDisplay;
-    if (timelineMonthEl) timelineMonthEl.textContent = monthDisplay;
 
     if (prevBtn) {
         const prevIdx = isArchiveView ? viewingArchiveIndex + 1 : 0;
