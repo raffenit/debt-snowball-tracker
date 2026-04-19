@@ -42,7 +42,29 @@ If you previously used the `panel_custom` YAML configuration:
 
 ---
 
-## 📱 Actionable Notifications (Optional)
+## � Summary Cards (Optional)
+
+In addition to the main tracker, three optional **summary cards** are available for quick at-a-glance views:
+
+| Card | Description | Card Type |
+|------|-------------|-----------|
+| **Monthly Summary** | Current month income, expenses, remaining cash flow, and days until next paycheck | `debt-snowball-monthly-card` |
+| **Payoff Progress** | Visual progress bar, percent paid off, next milestone debt, estimated payoff date | `debt-snowball-progress-card` |
+| **Yearly Summary** | Year-to-date debt reduction, interest estimates, debts paid off | `debt-snowball-yearly-card` |
+
+### Installing Summary Cards
+
+Summary cards are automatically included with HACS installation. To add them to any dashboard:
+
+1. Edit your dashboard → **Add Card**
+2. Search for "Debt Snowball" 
+3. Select one of the summary cards
+
+These cards work great on your main home dashboard for quick checks without opening the full tracker!
+
+---
+
+## �📱 Actionable Notifications (Optional)
 
 Want Home Assistant to remind you the day before a credit card or loan payment is due? 
 
