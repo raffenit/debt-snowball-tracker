@@ -95,7 +95,7 @@ body {
     width: 100% !important;
     max-width: none !important;
     margin: 0 !important;
-    padding: 2rem;
+    padding: 1rem;
     min-height: 100vh;
     box-sizing: border-box;
 }
@@ -104,11 +104,11 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 2.5rem;
+    margin-bottom: 1rem;
 }
 
 .header h1 {
-    font-size: 1.875rem;
+    font-size: 1.5rem;
     font-weight: 700;
     letter-spacing: -0.04em;
     font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
@@ -204,7 +204,7 @@ body {
 .main-content {
     display: flex;
     flex-direction: column;
-    gap: 2.5rem;
+    gap: 1.5rem;
 }
 
 .card {
@@ -541,7 +541,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* ===== Tablet (≤ 1024px) ===== */
 @media (max-width: 1024px) {
     .app-container {
-        padding: 1.5rem 1.25rem;
+        padding: 0.875rem;
     }
 
     .summary-stats {
@@ -600,18 +600,36 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* ===== Mobile (≤ 640px) ===== */
 @media (max-width: 640px) {
     .app-container {
-        padding: 1rem 0.875rem;
+        padding: 0.75rem;
     }
 
     .header {
         flex-direction: column;
         align-items: flex-start;
-        gap: 0.875rem;
-        margin-bottom: 1.25rem;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
     }
 
     .header h1 {
-        font-size: 1.625rem;
+        font-size: 1.25rem;
+    }
+
+    .tab-nav {
+        margin-bottom: 0.75rem;
+    }
+
+    .tab-btn {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.8rem;
+    }
+
+    .month-header {
+        padding: 0.625rem 0.75rem;
+        margin-bottom: 0.625rem;
+    }
+
+    .month-header h1 {
+        font-size: 1.375rem;
     }
 
     .header-actions {
@@ -835,7 +853,15 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* ===== Small phone (≤ 480px) ===== */
 @media (max-width: 480px) {
     .app-container {
-        padding: 0.875rem 0.75rem;
+        padding: 0.625rem;
+    }
+    
+    .month-header h1 {
+        font-size: 1.125rem;
+    }
+    
+    .month-header .subtitle {
+        font-size: 0.75rem;
     }
 
     .header h1 {
@@ -3398,7 +3424,7 @@ debt-snowball-card .tab-panel.active .stat-box:nth-child(4) { animation-delay: 0
 .tab-nav {
     display: flex;
     gap: 0.25rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: var(--radius);
@@ -3409,8 +3435,10 @@ debt-snowball-card .tab-panel.active .stat-box:nth-child(4) { animation-delay: 0
 }
 
 .tab-btn {
-    flex-shrink: 0;
-    padding: 0.625rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
     border-radius: 8px;
     border: none;
     background: transparent;
@@ -3419,7 +3447,7 @@ debt-snowball-card .tab-panel.active .stat-box:nth-child(4) { animation-delay: 0
     font-size: 0.875rem;
     font-weight: 500;
     cursor: pointer;
-    transition: var(--transition);
+    transition: all 0.2s ease;
     white-space: nowrap;
 }
 
@@ -3442,23 +3470,23 @@ debt-snowball-card .tab-panel.active .stat-box:nth-child(4) { animation-delay: 0
 .tab-panel.active {
     display: flex !important;
     flex-direction: column;
-    gap: 2.5rem;
+    gap: 1.5rem;
     animation: fadeIn 0.3s ease;
 }
 
 /* ===== Month Header ===== */
 .month-header {
     text-align: center;
-    margin-bottom: 1.5rem;
-    padding: 1.5rem;
+    margin-bottom: 0.75rem;
+    padding: 0.75rem 1rem;
     background: linear-gradient(135deg, rgba(91,127,255,0.1) 0%, rgba(168,85,247,0.08) 50%, rgba(91,127,255,0.1) 100%);
-    border-radius: 16px;
+    border-radius: 12px;
     border: 1px solid rgba(91,127,255,0.2);
     position: relative;
     overflow: hidden;
     box-shadow: 
-        0 8px 32px rgba(0,0,0,0.4),
-        0 0 48px rgba(91,127,255,0.08) inset,
+        0 6px 20px rgba(0,0,0,0.35),
+        0 0 32px rgba(91,127,255,0.06) inset,
         0 0 0 1px rgba(255,255,255,0.03);
 }
 .month-header::before {
@@ -3482,20 +3510,21 @@ debt-snowball-card .tab-panel.active .stat-box:nth-child(4) { animation-delay: 0
     box-shadow: 0 0 12px rgba(91,127,255,0.4);
 }
 .month-header h1 {
-    font-size: 2.5rem;
+    font-size: 1.75rem;
     font-weight: 800;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.02em;
     background: linear-gradient(110deg, #a5b8ff 0%, #c084fc 50%, #a5b8ff 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
     margin: 0;
     text-transform: uppercase;
+    line-height: 1.2;
 }
 .month-header .subtitle {
-    font-size: 1.1rem;
+    font-size: 0.875rem;
     color: var(--text-secondary);
-    margin-top: 0.5rem;
+    margin-top: 0.25rem;
     font-weight: 500;
     letter-spacing: 0.05em;
     text-transform: uppercase;
